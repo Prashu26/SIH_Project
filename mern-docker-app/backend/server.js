@@ -23,15 +23,23 @@ db.once('open', () => {
 
 // Define a simple route
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to MERN Docker App Backend' });
+  res.json({ message: 'Welcome to Skill Credentialing Backend' });
 });
 
-// Define API routes here
-app.get('/api/hello', (req, res) => {
-  res.json({ message: 'Hello from the backend!' });
-});
+// Mount API routes
+const authRoutes = require('./routes/auth');
+const instRoutes = require('./routes/institution');
+const learnerRoutes = require('./routes/learner');
+const verifyRoutes = require('./routes/verify');
+const aiRoutes = require('./routes/ai');
 
-const PORT = process.env.PORT || 5000;
+app.use('/api/auth', authRoutes);
+app.use('/api/institution', instRoutes);
+app.use('/api/learner', learnerRoutes);
+app.use('/api/verify', verifyRoutes);
+app.use('/api/ai', aiRoutes);
+
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
