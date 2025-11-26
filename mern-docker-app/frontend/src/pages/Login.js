@@ -25,8 +25,11 @@ export default function Login({ onLogin }) {
       return;
     }
 
-    onLogin(data.token, data.role);
-    navigate(data.role === 'Learner' ? '/learner' : '/institution');
+    const role = (data.role || '').toLowerCase();
+    onLogin(data.token, role);
+
+    const destination = role === 'learner' ? '/learner' : role === 'institute' ? '/institution' : role === 'admin' ? '/admin' : '/';
+    navigate(destination);
   };
 
   return (

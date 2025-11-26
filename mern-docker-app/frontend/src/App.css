@@ -206,6 +206,13 @@ textarea {
   box-shadow: 0 16px 35px rgba(76, 201, 240, 0.28);
 }
 
+.cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .stat-grid {
   display: flex;
   gap: 24px;

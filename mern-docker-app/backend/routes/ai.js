@@ -3,7 +3,7 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/recommendations', auth('Learner'), (req, res) => {
+router.get('/recommendations', auth('learner'), (req, res) => {
   // Hardcoded stub
   res.json({ recommendations: [
     { title: 'Full-Stack Developer', skills: ['JavaScript','React','Node.js'] },
@@ -11,7 +11,7 @@ router.get('/recommendations', auth('Learner'), (req, res) => {
   ]});
 });
 
-router.get('/trends', auth(['Institution']), (req, res) => {
+router.get('/trends', auth(['institute']), (req, res) => {
   res.json({ trends: [
     { skill: 'React', demand: 'High' },
     { skill: 'Node.js', demand: 'High' },

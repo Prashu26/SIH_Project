@@ -3,66 +3,128 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 
-const Institution = require('../models/Institution');
-const Learner = require('../models/Learner');
+const User = require('../models/User');
 
 const router = express.Router();
 
-// Register Learner or Institution
+const sanitizeUser = (user) => {
+  if (!user) return null;
+  const { password, __v, ...rest } = user.toObject({ getters: true, virtuals: false });
+  return rest;
+};
+
+// Register user (Learner, Institute, Admin)
 router.post('/register', async (req, res) => {
   try {
-    const { role } = req.body;
-    if (role === 'Institution') {
-      const { name, email, password } = req.body;
-      if (!name || !email || !password) return res.status(400).json({ message: 'Missing fields' });
-      const existing = await Institution.findOne({ email });
-      if (existing) return res.status(400).json({ message: 'Email already in use' });
-      const hashed = await bcrypt.hash(password, 10);
-      const regId = uuidv4();
-      const verificationKey = uuidv4();
-      const inst = new Institution({ name, email, password: hashed, regId, verificationKey });
-      await inst.save();
-      return res.json({ message: 'Institution registered', id: inst._id });
-    } else {
-      // Learner
-      const { firstName, lastName, email, password, learnerId } = req.body;
-      if (!email || !password || !learnerId) return res.status(400).json({ message: 'Missing fields' });
-      const existing = await Learner.findOne({ email });
-      if (existing) return res.status(400).json({ message: 'Email already in use' });
-      const hashed = await bcrypt.hash(password, 10);
-      const learner = new Learner({ firstName, lastName, email, password: hashed, learnerId });
-      await learner.save();
-      return res.json({ message: 'Learner registered', id: learner._id });
+    const normalizedRole = (req.body.role || '').toLowerCase();
+    if (!['learner', 'institute', 'admin'].includes(normalizedRole)) {
+      return res.status(400).json({ message: 'Invalid role supplied.' });
     }
+
+    const email = (req.body.email || '').toLowerCase().trim();
+    const name = (req.body.name || '').trim();
+    const password = req.body.password;
+
+    if (!email || !name || !password) {
+      return res.status(400).json({ message: 'Name, email, and password are required.' });
+    }
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: 'Email already in use.' });
+    }
+
+    if (normalizedRole === 'admin') {
+      const providedSecret = req.body.adminSecret;
+      const adminSecret = process.env.ADMIN_REG_SECRET || 'moducert-admin-bootstrap';
+      if (providedSecret !== adminSecret) {
+        return res.status(403).json({ message: 'Invalid admin registration secret.' });
+      }
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = new User({ name, email, password: hashed, role: normalizedRole });
+
+    if (normalizedRole === 'learner') {
+      const learnerId = (req.body.learnerId || '').trim();
+      if (!learnerId) {
+        return res.status(400).json({ message: 'Learner ID is required.' });
+      }
+
+      const existingLearnerId = await User.findOne({ 'learnerProfile.learnerId': learnerId });
+      if (existingLearnerId) {
+        return res.status(400).json({ message: 'Learner ID already in use.' });
+      }
+
+      user.learnerProfile = {
+        learnerId,
+        courses: Array.isArray(req.body.courses) ? req.body.courses : [],
+      };
+    }
+
+    if (normalizedRole === 'institute') {
+      const requestedRegistrationId = (req.body.registrationId || uuidv4()).trim();
+      const existingRegistration = await User.findOne({ 'instituteProfile.registrationId': requestedRegistrationId });
+      if (existingRegistration) {
+        return res.status(400).json({ message: 'Registration ID already in use.' });
+      }
+
+      user.instituteProfile = {
+        registrationId: requestedRegistrationId,
+        verificationKey: uuidv4(),
+      };
+    }
+
+    await user.save();
+
+    return res.json({ message: 'Registration successful', user: sanitizeUser(user) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Login (Learner or Institution)
+// Login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Missing fields' });
 
-    // Try learner
-    let user = await Learner.findOne({ email });
-    let type = 'Learner';
-    if (!user) {
-      user = await Institution.findOne({ email });
-      type = 'Institution';
-    }
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(400).json({ message: 'Invalid credentials' });
-    const payload = { id: user._id, role: user.role || type, email: user.email };
+
+    const payload = { id: user._id, role: user.role, email: user.email };
     const secret = process.env.JWT_SECRET || 'supersecret';
     const token = jwt.sign(payload, secret, { expiresIn: '7d' });
-    res.json({ token, role: payload.role });
+    res.json({ token, role: payload.role, user: sanitizeUser(user) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Current user profile shortcut
+router.get('/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const secret = process.env.JWT_SECRET || 'supersecret';
+    const payload = jwt.verify(token, secret);
+    const user = await User.findById(payload.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ user: sanitizeUser(user) });
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ message: 'Invalid token' });
   }
 });
 

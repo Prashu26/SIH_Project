@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -32,12 +33,19 @@ const instRoutes = require('./routes/institution');
 const learnerRoutes = require('./routes/learner');
 const verifyRoutes = require('./routes/verify');
 const aiRoutes = require('./routes/ai');
+const adminRoutes = require('./routes/admin');
+const courseRoutes = require('./routes/courses');
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/artifacts', express.static(path.join(__dirname, 'generated')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/institution', instRoutes);
 app.use('/api/learner', learnerRoutes);
 app.use('/api/verify', verifyRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/courses', courseRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

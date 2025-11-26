@@ -9,6 +9,7 @@ import Verify from './pages/Verify';
 import LearnerDashboard from './pages/LearnerDashboard';
 import InstitutionDashboard from './pages/InstitutionDashboard';
 import NotFound from './pages/NotFound';
+import AdminDashboard from './pages/AdminDashboard';
 
 function RequireAuth({ token, role, allowedRoles, children }) {
   if (!token) {
@@ -43,7 +44,7 @@ function Layout({ token, role, onLogout }) {
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token') || '');
-  const [role, setRole] = useState(() => localStorage.getItem('role') || '');
+  const [role, setRole] = useState(() => (localStorage.getItem('role') || '').toLowerCase());
 
   useEffect(() => {
     if (token) {
@@ -63,7 +64,7 @@ function App() {
 
   const handleLogin = (newToken, newRole) => {
     setToken(newToken);
-    setRole(newRole);
+    setRole((newRole || '').toLowerCase());
   };
 
   const handleLogout = () => {
@@ -82,7 +83,7 @@ function App() {
           <Route
             path="learner"
             element={
-              <RequireAuth token={token} role={role} allowedRoles={['Learner']}>
+              <RequireAuth token={token} role={role} allowedRoles={['learner']}>
                 <LearnerDashboard token={token} />
               </RequireAuth>
             }
@@ -90,8 +91,16 @@ function App() {
           <Route
             path="institution"
             element={
-              <RequireAuth token={token} role={role} allowedRoles={['Institution']}>
+              <RequireAuth token={token} role={role} allowedRoles={['institute']}>
                 <InstitutionDashboard token={token} />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="admin"
+            element={
+              <RequireAuth token={token} role={role} allowedRoles={['admin']}>
+                <AdminDashboard token={token} />
               </RequireAuth>
             }
           />

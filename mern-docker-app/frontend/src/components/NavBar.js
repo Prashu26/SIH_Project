@@ -13,12 +13,16 @@ export default function NavBar({ token, role, onLogout }) {
     roleLinks.push({ to: '/login', label: 'Login' }, { to: '/register', label: 'Register' });
   }
 
-  if (token && role === 'Learner') {
+  if (token && role === 'learner') {
     roleLinks.push({ to: '/learner', label: 'Learner' });
   }
 
-  if (token && role === 'Institution') {
+  if (token && role === 'institute') {
     roleLinks.push({ to: '/institution', label: 'Institution' });
+  }
+
+  if (token && role === 'admin') {
+    roleLinks.push({ to: '/admin', label: 'Admin' });
   }
 
   const links = [...baseLinks, ...roleLinks];

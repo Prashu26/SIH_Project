@@ -14,17 +14,18 @@ const institutionDefaults = {
   name: '',
   email: '',
   password: '',
+  registrationId: '',
 };
 
 export default function Register() {
-  const [role, setRole] = useState('Learner');
+  const [role, setRole] = useState('learner');
   const [form, setForm] = useState(learnerDefaults);
   const [feedback, setFeedback] = useState({ tone: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    setForm(role === 'Learner' ? learnerDefaults : institutionDefaults);
+    setForm(role === 'learner' ? learnerDefaults : institutionDefaults);
     setFeedback({ tone: '', text: '' });
   }, [role]);
 
@@ -33,7 +34,27 @@ export default function Register() {
     setFeedback({ tone: '', text: '' });
     setIsSubmitting(true);
 
-    const payload = role === 'Learner' ? { role, ...form } : { role, ...form };
+    const payload = { role };
+
+    if (role === 'learner') {
+      const name = `${form.firstName} ${form.lastName}`.trim();
+      if (!name) {
+        setFeedback({ tone: 'error', text: 'First and last name are required.' });
+        setIsSubmitting(false);
+        return;
+      }
+      payload.name = name;
+      payload.email = form.email.trim().toLowerCase();
+      payload.password = form.password;
+      payload.learnerId = form.learnerId;
+    } else if (role === 'institute') {
+      payload.name = form.name;
+      payload.email = form.email.trim().toLowerCase();
+      payload.password = form.password;
+      if (form.registrationId) {
+        payload.registrationId = form.registrationId;
+      }
+    }
     const { ok, data } = await apiFetch('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -63,12 +84,12 @@ export default function Register() {
         <label>
           I am a
           <select value={role} onChange={(event) => setRole(event.target.value)}>
-            <option value="Learner">Learner</option>
-            <option value="Institution">Institution</option>
+            <option value="learner">Learner</option>
+            <option value="institute">Institution</option>
           </select>
         </label>
 
-        {role === 'Learner' ? (
+        {role === 'learner' ? (
           <>
             <label>
               First name
@@ -104,6 +125,10 @@ export default function Register() {
             <label>
               Password
               <input type="password" value={form.password} onChange={onChange('password')} placeholder="Create a strong password" required />
+            </label>
+            <label>
+              Registration ID (optional)
+              <input value={form.registrationId} onChange={onChange('registrationId')} placeholder="INST-2045" />
             </label>
           </>
         )}
