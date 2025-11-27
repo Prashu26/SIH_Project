@@ -1,0 +1,4 @@
+studentUniqueCode,learnerEmail,courseName,modules,validUntil,ncvqLevel,qualificationCode,qualificationTitle,qualificationType
+UVCE2025-001,ramu1@gmail.com,Full stack,HTML|CSS|JavaScript|React|Node.js,2026-12-31,Level 4,NCVET-FS-2025,Full Stack Web Development,National Certificate
+UVCE2025-002,ramu@gmail.com,Full stack,HTML|CSS|JavaScript|React|MongoDB|Express,2026-12-31,Level 4,NCVET-FS-2025,Full Stack Web Development,National Certificate
+UVCE2025-003,testlearner@example.com,Full stack,JavaScript|React|Node.js|MongoDB|REST APIs,2026-12-31,Level 4,NCVET-FS-2025,Full Stack Web Development,National Certificate

@@ -1,4 +1,5 @@
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+// Prefer relative /api for Docker (nginx proxies to backend). Override via REACT_APP_API_URL when needed.
+const API_BASE = process.env.REACT_APP_API_URL || '';
 
 export async function apiFetch(path, options = {}) {
   const headers = options.headers || {};

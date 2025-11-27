@@ -1,0 +1,4 @@
+studentId,learnerId,courseId,modules,validUntil,ncvqLevel,qualificationCode,qualificationTitle,qualificationType
+ST001,L-001,673d9e8f001,Web Development|JavaScript|React,2026-12-31,Level 4,NCVQ-WD-2024,Full Stack Web Development,National Certificate
+ST002,L-002,673d9e8f002,Data Science|Python|Machine Learning,2026-12-31,Level 5,NCVQ-DS-2024,Data Science Professional,National Diploma
+ST003,L-003,673d9e8f003,Cloud Computing|AWS|DevOps,2026-12-31,Level 4,NCVQ-CC-2024,Cloud Infrastructure Specialist,National Certificate

@@ -11,6 +11,12 @@ const mapCertificate = (cert) => ({
   validUntil: cert.validUntil,
   modulesAwarded: cert.modulesAwarded,
   pdfPath: cert.pdfPath,
+  artifactHash: cert.artifactHash,
+  ipfsCid: cert.ipfsCid,
+  blockchainTxHash: cert.blockchainTxHash,
+  merkleRoot: cert.merkleRoot,
+  batchId: cert.batchId,
+  merkleProof: cert.merkleProof,
   learner: cert.learner
     ? {
         name: cert.learner.name,
@@ -65,3 +71,36 @@ router.get('/:certificateId', async (req, res) => {
 });
 
 module.exports = router;
+
+// Accept uploaded PDF and verify against on-chain anchor
+const multer = require('multer');
+const crypto = require('crypto');
+const { verifyCredential } = require('../utils/blockchainService');
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+
+// POST /api/verify/upload - upload PDF to verify
+router.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'Please upload a file' });
+    const buffer = req.file.buffer;
+    const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+    const anchorKey = `sha256:${hash}`;
+
+    // Query blockchain for this anchor
+    try {
+      const chainData = await verifyCredential(anchorKey);
+      if (!chainData.exists) {
+        return res.json({ success: true, verified: false, message: 'No anchor found on-chain for this document', anchor: anchorKey });
+      }
+
+      return res.json({ success: true, verified: true, anchor: anchorKey, blockchain: chainData });
+    } catch (e) {
+      console.error('Blockchain verification error:', e);
+      return res.status(500).json({ success: false, message: 'Blockchain verification failed', error: e.message });
+    }
+  } catch (err) {
+    console.error('Verification upload error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});

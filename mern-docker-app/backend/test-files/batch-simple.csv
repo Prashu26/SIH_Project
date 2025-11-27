@@ -1,0 +1,4 @@
+studentUniqueCode,learnerEmail,courseName,modules,validUntil,ncvqLevel,qualificationCode,qualificationTitle,qualificationType
+STU-001,learner1@example.com,Full Stack Web Development,HTML|CSS|JavaScript|React|Node.js,2026-12-31,Level 4,NCVQ-WD-2024,Full Stack Web Development,National Certificate
+STU-002,learner2@example.com,Data Science Bootcamp,Python|Pandas|Machine Learning|Data Visualization,2026-12-31,Level 5,NCVQ-DS-2024,Data Science Professional,National Diploma
+STU-003,learner3@example.com,Cloud DevOps Engineer,AWS|Docker|Kubernetes|CI/CD,2026-12-31,Level 4,NCVQ-CC-2024,Cloud Infrastructure Specialist,National Certificate

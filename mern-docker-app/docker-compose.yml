@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MongoDB Service
   mongo:
@@ -17,14 +15,22 @@ services:
     build: ./backend
     container_name: backend
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       - MONGODB_URI=mongodb://mongo:27017/mernapp
       - PORT=8080
+      - PROVIDER_URL=http://blockchain:8545
+      - IPFS_API_URL=http://ipfs:5001
+      - POLYGON_RPC_URL=https://rpc-mumbai.maticvigil.com
+      - PRIVATE_KEY=${PRIVATE_KEY:-}
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS:-}
     depends_on:
       - mongo
+      - blockchain-deployer
     networks:
       - mern-network
+    volumes:
+      - blockchain-shared:/usr/src/app/blockchain
     restart: unless-stopped
 
   # Frontend Service
@@ -39,6 +45,50 @@ services:
       - mern-network
     restart: unless-stopped
 
+  # Hardhat local blockchain node
+  blockchain:
+    build: ./backend/blockchain
+    container_name: blockchain
+    command: ["npm", "run", "node"]
+    ports:
+      - "8545:8545"
+    networks:
+      - mern-network
+    volumes:
+      - blockchain-shared:/app
+    restart: unless-stopped
+
+  # Deploys the smart contract to the blockchain node
+  blockchain-deployer:
+    build: ./backend/blockchain
+    container_name: blockchain-deployer
+    environment:
+      - PROVIDER_URL=http://blockchain:8545
+      - POLYGON_RPC_URL=https://rpc-mumbai.maticvigil.com
+      - PRIVATE_KEY=${PRIVATE_KEY:-}
+    depends_on:
+      - blockchain
+    networks:
+      - mern-network
+    volumes:
+      - blockchain-shared:/app
+    command: ["npm", "run", "deploy"]
+    restart: "no"
+
+  # Local IPFS node (optional but used by backend IPFS service)
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: ipfs
+    ports:
+      - "4001:4001" # swarm
+      - "5001:5001" # API
+      - "8080:8080" # gateway
+    networks:
+      - mern-network
+    volumes:
+      - ipfs-data:/data/ipfs
+    restart: unless-stopped
+
 # Networks
 networks:
   mern-network:
@@ -47,3 +97,5 @@ networks:
 # Volumes
 volumes:
   mongo-data:
+  blockchain-shared:
+  ipfs-data:
