@@ -8,7 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Verify from './pages/Verify';
 import LearnerDashboard from './pages/LearnerDashboard';
-import InstitutionDashboard from './pages/InstitutionDashboard';
+import IssuerDashboard from './pages/IssuerDashboard';
 import NotFound from './pages/NotFound';
 import AdminDashboard from './pages/AdminDashboard';
 import About from './pages/About';
@@ -37,7 +37,7 @@ function RequireAuth({ allowedRoles, children }) {
 function Layout() {
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
-  const isDashboard = ['/learner', '/institution', '/admin'].some(path => 
+  const isDashboard = ['/learner', '/institution', '/institute', '/admin'].some(path => 
     location.pathname.startsWith(path)
   );
 
@@ -76,7 +76,15 @@ function Layout() {
             path="/institution/*" 
             element={
               <RequireAuth allowedRoles={['institution', 'institute']}>
-                <InstitutionDashboard />
+                <IssuerDashboard />
+              </RequireAuth>
+            } 
+          />
+          <Route 
+            path="/institute/*" 
+            element={
+              <RequireAuth allowedRoles={['institution', 'institute']}>
+                <IssuerDashboard />
               </RequireAuth>
             } 
           />

@@ -35,7 +35,7 @@ $headers = @{
 }
 
 try {
-    $response = Invoke-RestMethod -Uri 'http://localhost:8081/api/institution/certificates/batch' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -UseBasicParsing
+    $response = Invoke-RestMethod -Uri 'http://localhost:8081/api/institute/certificates/batch' -Method Post -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -UseBasicParsing
     
     Write-Output "SUCCESS!"
     Write-Output "Total: $($response.data.total)"

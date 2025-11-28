@@ -10,15 +10,23 @@ const router = express.Router();
 const sanitizeUser = (user) => {
   if (!user) return null;
   const { password, __v, ...rest } = user.toObject({ getters: true, virtuals: false });
+  if (rest.role) {
+    rest.role = rest.role.toLowerCase();
+  }
   return rest;
 };
 
-// Register user (Learner, Institute, Admin)
+// Register user (Learner, Institute, Institution, Admin)
 router.post('/register', async (req, res) => {
   try {
-    const normalizedRole = (req.body.role || '').toLowerCase();
-    if (!['learner', 'institute', 'admin'].includes(normalizedRole)) {
+    let normalizedRole = (req.body.role || '').toLowerCase();
+    if (!['learner', 'institute', 'institution', 'admin'].includes(normalizedRole)) {
       return res.status(400).json({ message: 'Invalid role supplied.' });
+    }
+
+    // Assign 'institution' role instead of 'institute' during registration
+    if (normalizedRole === 'institute') {
+      normalizedRole = 'institution';
     }
 
     const email = (req.body.email || '').toLowerCase().trim();
@@ -62,7 +70,7 @@ router.post('/register', async (req, res) => {
       };
     }
 
-    if (normalizedRole === 'institute') {
+    if (['institute', 'institution'].includes(normalizedRole)) {
       const requestedRegistrationId = (req.body.registrationId || uuidv4()).trim();
       const existingRegistration = await User.findOne({ 'instituteProfile.registrationId': requestedRegistrationId });
       if (existingRegistration) {
@@ -96,10 +104,11 @@ router.post('/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(400).json({ message: 'Invalid credentials' });
 
-    const payload = { id: user._id, role: user.role, email: user.email };
+    const role = (user.role || '').toLowerCase();
+    const payload = { id: user._id, role, email: user.email };
     const secret = process.env.JWT_SECRET || 'supersecret';
     const token = jwt.sign(payload, secret, { expiresIn: '7d' });
-    res.json({ token, role: payload.role, user: sanitizeUser(user) });
+    res.json({ token, role, user: sanitizeUser(user) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

@@ -52,7 +52,13 @@ export default function Login() {
       // Use the login function from context or fallback
       login(data, data.token);
 
-      const destination = role === 'learner' ? '/learner' : (role === 'institution' || role === 'institute') ? '/institution' : role === 'admin' ? '/admin' : '/';
+      const destination = role === 'learner'
+        ? '/learner'
+        : (role === 'institution' || role === 'institute')
+        ? '/institution?tab=issue'
+        : role === 'admin'
+        ? '/admin'
+        : '/';
       navigate(destination);
     } catch (error) {
       setIsSubmitting(false);
@@ -162,7 +168,7 @@ export default function Login() {
           </h3>
           <div className="text-sm text-gray-300 space-y-1">
             <p><span className="text-gray-400">Learner:</span> learner@example.com / password123</p>
-            <p><span className="text-gray-400">Institution:</span> institute@example.com / password123</p>
+            <p><span className="text-gray-400">Institute:</span> institute@example.com / password123</p>
             <p><span className="text-gray-400">Admin:</span> admin@example.com / password123</p>
           </div>
         </div>

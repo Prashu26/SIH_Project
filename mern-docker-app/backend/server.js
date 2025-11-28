@@ -64,7 +64,7 @@ app.get('/', (req, res) => {
 
 // Mount API routes
 const authRoutes = require('./routes/auth');
-const instRoutes = require('./routes/institution');
+const instituteRoutes = require('./routes/institute');
 const learnerRoutes = require('./routes/learner');
 const verifyRoutes = require('./routes/verify');
 const aiRoutes = require('./routes/ai');
@@ -76,7 +76,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/artifacts', express.static(path.join(__dirname, 'generated')));
 
 app.use('/api/auth', authRoutes);
-app.use('/api/institution', instRoutes);
+app.use('/api/institute', instituteRoutes);
+app.use('/api/institution', instituteRoutes);
 app.use('/api/learner', learnerRoutes);
 app.use('/api/verify', verifyRoutes);
 app.use('/api/ai', aiRoutes);

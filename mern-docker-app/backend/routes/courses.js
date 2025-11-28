@@ -29,7 +29,7 @@ router.get('/:courseId', async (req, res) => {
   }
 });
 
-router.post('/assign', auth('institute'), async (req, res) => {
+router.post('/assign', auth(['institute', 'institution']), async (req, res) => {
   try {
     const { learnerId, courseId } = req.body;
     if (!learnerId || !courseId) {

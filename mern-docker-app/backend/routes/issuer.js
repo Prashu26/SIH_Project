@@ -23,7 +23,7 @@ function resolveInstituteCode(req) {
 
 router.post(
   '/upload',
-  auth('institute'),
+  auth(['institute', 'institution']),
   runSingleUpload,
   async (req, res) => {
     let csvPath;
@@ -121,7 +121,7 @@ router.get(
 
 router.post(
   '/batches/:batchId/reanchor',
-  auth('institute'),
+  auth(['institute', 'institution']),
   async (req, res) => {
     try {
       const instituteCode = resolveInstituteCode(req);

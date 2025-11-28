@@ -43,8 +43,8 @@ const Header = () => {
   const dashboardItems = user ? [
     ...(user.role === 'learner' ? [{ path: '/learner', label: 'My Certificates', icon: 'bx-certificate' }] : []),
     ...((user.role === 'institution' || user.role === 'institute') ? [
-      { path: '/institution', label: 'Dashboard', icon: 'bx-building' },
-      { path: '/institution', label: 'Issue Certificate', icon: 'bx-add-to-queue' }
+      { path: '/institution?tab=certificates', label: 'Institute Panel', icon: 'bx-building' },
+      { path: '/institution?tab=issue', label: 'Issue Certificate', icon: 'bx-add-to-queue' }
     ] : []),
     ...(user.role === 'admin' ? [{ path: '/admin', label: 'Admin Panel', icon: 'bx-cog' }] : [])
   ] : [];

@@ -17,8 +17,11 @@ export default function NavBar({ token, role, onLogout }) {
     roleLinks.push({ to: '/learner', label: 'Learner' });
   }
 
-  if (token && role === 'institute') {
-    roleLinks.push({ to: '/institution', label: 'Institution' });
+  if (token && (role === 'institute' || role === 'institution')) {
+    roleLinks.push(
+      { to: '/institution?tab=certificates', label: 'Institute' },
+      { to: '/institution?tab=issue', label: 'Issue Certificate' }
+    );
   }
 
   if (token && role === 'admin') {

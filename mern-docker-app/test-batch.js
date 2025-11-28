@@ -19,7 +19,7 @@ const fetch = require('node-fetch');
     const form = new FormData();
     form.append('file', fs.createReadStream('/usr/src/app/test-files/working-batch.csv'));
     
-    const uploadResp = await fetch('http://localhost:8080/api/institution/certificates/batch', {
+    const uploadResp = await fetch('http://localhost:8080/api/institute/certificates/batch', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
