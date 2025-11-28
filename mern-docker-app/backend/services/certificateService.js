@@ -31,6 +31,29 @@ class CertificateService {
         status = 'Issued'
       } = certificateData;
 
+      console.log('issueCertificate called with:', {
+        certificateId,
+        studentUniqueCode,
+        validUntil,
+        learner: typeof learner,
+        institute: typeof institute,
+        course: typeof course
+      });
+
+      // Parse and validate validUntil date
+      let parsedValidUntil = null;
+      if (validUntil) {
+        parsedValidUntil = new Date(validUntil);
+        // If invalid date, set to 1 year from now
+        if (isNaN(parsedValidUntil.getTime())) {
+          console.warn(`Invalid validUntil date: ${validUntil}, defaulting to 1 year from now`);
+          parsedValidUntil = new Date();
+          parsedValidUntil.setFullYear(parsedValidUntil.getFullYear() + 1);
+        }
+      }
+
+      console.log('Parsed validUntil:', parsedValidUntil);
+
       // Generate metadata hash
       const metadata = this.generateMetadata({
         certificateId,
@@ -40,7 +63,7 @@ class CertificateService {
         course,
         modulesAwarded,
         issueDate: new Date(),
-        validUntil,
+        validUntil: parsedValidUntil,
         ncvqLevel,
         ncvqQualificationCode,
         ncvqQualificationTitle,
@@ -60,7 +83,7 @@ class CertificateService {
         course,
         modulesAwarded,
         issueDate: new Date(),
-        validUntil: new Date(validUntil),
+        validUntil: parsedValidUntil,
         status,
         metadataHash: metadata.hash,
         qrCodeData,
@@ -71,10 +94,25 @@ class CertificateService {
       });
 
       // Generate PDF and update certificate with file paths
-      const { pdfPath, jsonLdPath } = await this.generateCertificateFiles(certificate.toObject());
+      // Pass the plain object but ensure all required fields are included
+      const certData = {
+        ...certificate.toObject(),
+        certificateId: certificateId,
+        studentUniqueCode: studentUniqueCode,
+        issueDate: new Date(),
+        validUntil: parsedValidUntil,
+        ncvqLevel,
+        ncvqQualificationCode,
+        ncvqQualificationTitle,
+        ncvqQualificationType
+      };
+      const { pdfPath, jsonLdPath } = await this.generateCertificateFiles(certData);
       certificate.pdfPath = pdfPath;
       certificate.jsonLdPath = jsonLdPath;
-      certificate.artifactHash = await this.calculateFileHash(pdfPath);
+      
+      // Calculate artifact hash from the full path
+      const fullPdfPath = path.join(__dirname, '../../', pdfPath);
+      certificate.artifactHash = await this.calculateFileHash(fullPdfPath);
 
       // Save certificate to database
       await certificate.save();
@@ -164,38 +202,78 @@ class CertificateService {
 
     // Anchor the batch Merkle root on-chain and store proofs
     try {
+      console.log(`🔗 Anchoring batch of ${metadataHashes.length} certificates to blockchain...`);
       const anchorResult = await BlockchainService.anchorBatch(metadataHashes);
-      if (anchorResult && anchorResult.txHash) {
-        // Add blockchain txHash to all created certificates and write proof files
-        for (const cert of createdCertificates) {
+      
+      if (anchorResult && anchorResult.success && anchorResult.txHash) {
+        console.log(`✅ Batch anchored successfully: ${anchorResult.txHash}`);
+        console.log(`  - Merkle Root: ${anchorResult.merkleRoot}`);
+        console.log(`  - Batch ID: ${anchorResult.batchId}`);
+        
+        // Update each certificate with blockchain data and proofs
+        for (let i = 0; i < createdCertificates.length; i++) {
+          const cert = createdCertificates[i];
+          const proofData = anchorResult.proofs[i];
+          
           try {
+            // Update certificate with blockchain anchoring data
             cert.blockchainTxHash = anchorResult.txHash;
             cert.merkleRoot = anchorResult.merkleRoot;
+            cert.merkleProof = proofData.merkleProof;
+            cert.batchId = anchorResult.batchId;
             await cert.save();
 
-            // Build proof JSON (merkleProof already stored by anchorBatch in DB)
-            const proof = {
+            // Write proof JSON file for download/verification
+            const proofJson = {
               certificateId: cert.certificateId,
               metadataHash: cert.metadataHash,
-              merkleRoot: cert.merkleRoot || anchorResult.merkleRoot,
-              merkleProof: cert.merkleProof || null,
-              txHash: anchorResult.txHash,
-              issuedAt: new Date().toISOString()
+              merkleRoot: anchorResult.merkleRoot,
+              merkleProof: proofData.merkleProof,
+              batchId: anchorResult.batchId,
+              blockchainTxHash: anchorResult.txHash,
+              issuedAt: cert.issueDate.toISOString(),
+              verificationInstructions: {
+                step1: "Verify locally using the Merkle proof and root",
+                step2: `Query blockchain for batch root: getBatchRoot(${anchorResult.batchId})`,
+                step3: "Compare computed root with on-chain root"
+              }
             };
 
             const proofPath = path.join(__dirname, '../../uploads/certificates', cert.certificateId, `${cert.certificateId}-proof.json`);
             const proofDir = path.dirname(proofPath);
             if (!fs.existsSync(proofDir)) fs.mkdirSync(proofDir, { recursive: true });
-            fs.writeFileSync(proofPath, JSON.stringify(proof, null, 2));
+            fs.writeFileSync(proofPath, JSON.stringify(proofJson, null, 2));
+            
             cert.proofPath = proofPath.replace(/^.*[\\/]uploads[\/]/, 'uploads/');
             await cert.save();
+            
+            console.log(`  ✓ Updated certificate ${cert.certificateId} with proof`);
           } catch (e) {
-            console.warn('Failed to update certificate with batch txHash/proof:', e.message || e);
+            console.warn(`Failed to update certificate ${cert.certificateId}:`, e.message || e);
           }
         }
+        
+        // Add anchoring info to results
+        results.blockchainAnchoring = {
+          success: true,
+          txHash: anchorResult.txHash,
+          merkleRoot: anchorResult.merkleRoot,
+          batchId: anchorResult.batchId,
+          gasUsed: anchorResult.gasUsed
+        };
+      } else if (anchorResult && !anchorResult.success) {
+        console.warn('⚠️ Blockchain anchoring skipped:', anchorResult.error || anchorResult.message);
+        results.blockchainAnchoring = {
+          success: false,
+          reason: anchorResult.error || anchorResult.message
+        };
       }
     } catch (e) {
-      console.error('Batch anchoring failed:', e.message || e);
+      console.error('❌ Batch anchoring failed:', e.message || e);
+      results.blockchainAnchoring = {
+        success: false,
+        error: e.message
+      };
     }
 
     return results;

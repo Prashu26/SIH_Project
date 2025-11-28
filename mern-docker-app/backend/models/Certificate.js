@@ -2,86 +2,87 @@ const mongoose = require('mongoose');
 
 const CertificateSchema = new mongoose.Schema(
   {
-    // Certificate Identification
+    // Primary identifiers
     certificateId: { type: String, required: true, unique: true, index: true },
-    studentUniqueCode: { type: String, required: true, index: true }, // College-issued ID
+    certificate_id: { type: String, index: true }, // Legacy field
     
-    // Relationships
-    learner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    institute: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+    studentUniqueCode: { type: String, required: true, index: true },
+    student_unique_code: { type: String, index: true }, // Legacy field
     
-    // Certificate Details
+    // References
+    learner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    institute: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true, index: true },
+    
+    // Legacy references
+    institute_code: { type: String, index: true },
+    batch: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch' },
+    student: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
+    
+    // Certificate details
     modulesAwarded: { type: [String], default: [] },
-    issueDate: { type: Date, default: Date.now },
+    issueDate: { type: Date, required: true, default: Date.now },
+    issue_date: { type: Date }, // Legacy field
     validUntil: { type: Date },
     
-    // File Storage
-    pdfPath: { type: String },
-    jsonLdPath: { type: String }, // Path to JSON-LD file
-    
-    // Verification Data
-    qrCodeData: { type: String },
-    metadataHash: { type: String, index: true }, // SHA-256 hash of certificate data
-    artifactHash: { type: String }, // Hash of the PDF content
-    ipfsCid: { type: String }, // IPFS Content Identifier
-    
-    // Blockchain Data
-    blockchainTxHash: { type: String },
-    merkleRoot: { type: String },
-    merkleProof: { type: mongoose.Schema.Types.Mixed }, // Array of proof objects
-    batchId: { type: String }, // Batch ID from contract
-    
-    // Status and Audit
-    status: { 
-      type: String, 
-      enum: ['Draft', 'Issued', 'Revoked'], 
-      default: 'Draft' 
-    },
-    revokedAt: { type: Date },
-    revocationReason: { type: String },
-    
-    // NCVET Compliance Fields
+    // NCVQ / Qualification details
     ncvqLevel: { type: String },
     ncvqQualificationCode: { type: String },
     ncvqQualificationTitle: { type: String },
-    ncvqQualificationType: { type: String },
+    ncvqQualificationType: { type: String, default: 'National Certificate' },
     
-    // Additional Metadata
-    metadata: { type: mongoose.Schema.Types.Mixed }
+    // Status
+    status: {
+      type: String,
+      enum: ['Pending', 'Ready', 'Issued', 'Revoked', 'Failed', 'PENDING', 'READY', 'ISSUED', 'REVOKED', 'FAILED'],
+      default: 'Issued',
+      index: true
+    },
+    
+    // Blockchain & Merkle
+    blockchainTxHash: { type: String, index: true },
+    blockchain_tx: { type: String }, // Legacy field
+    merkleRoot: { type: String, index: true },
+    merkleProof: { type: [String], default: [] },
+    merkle_proof: { type: [String], default: [] }, // Legacy field
+    batchId: { type: String, index: true },
+    
+    // Hashes & verification
+    metadataHash: { type: String, required: true, index: true },
+    artifactHash: { type: String },
+    sha256: { type: String, index: true }, // Legacy field
+    qrCodeData: { type: String },
+    
+    // File paths
+    pdfPath: { type: String },
+    pdf_url: { type: String }, // Legacy field
+    jsonLdPath: { type: String },
+    proofPath: { type: String },
+    proof_json_path: { type: String }, // Legacy field
+    
+    // IPFS
+    ipfsCid: { type: String },
+    ipfs_cid: { type: String }, // Legacy field
+    
+    // Revocation
+    revokedAt: { type: Date },
+    revoked_at: { type: Date }, // Legacy field
+    revocationReason: { type: String },
+    revocation_reason: { type: String }, // Legacy field
+    
+    // Additional metadata
+    meta: { type: mongoose.Schema.Types.Mixed },
+    storage: { type: mongoose.Schema.Types.Mixed, default: {} }
   },
-  { 
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+  {
+    timestamps: true
   }
 );
 
-// Indexes for faster queries
-CertificateSchema.index({ studentUniqueCode: 1, institute: 1 }, { unique: true });
+// Indexes
+CertificateSchema.index({ studentUniqueCode: 1, institute: 1 });
+CertificateSchema.index({ student_unique_code: 1, institute_code: 1 }); // Legacy index
+CertificateSchema.index({ learner: 1, course: 1 });
 CertificateSchema.index({ merkleRoot: 1 });
-CertificateSchema.index({ status: 1 });
-CertificateSchema.index({ institute: 1, status: 1 });
-CertificateSchema.index({ learner: 1, status: 1 });
-
-CertificateSchema.methods.toSummary = function toSummary() {
-  return {
-    id: this._id,
-    certificateId: this.certificateId,
-    learner: this.learner,
-    institute: this.institute,
-    course: this.course,
-    modulesAwarded: this.modulesAwarded,
-    issueDate: this.issueDate,
-    validUntil: this.validUntil,
-    status: this.status,
-    pdfPath: this.pdfPath,
-    artifactHash: this.artifactHash,
-    ipfsCid: this.ipfsCid,
-    blockchainTxHash: this.blockchainTxHash,
-    createdAt: this.createdAt,
-    updatedAt: this.updatedAt,
-  };
-};
 
 module.exports = mongoose.model('Certificate', CertificateSchema);

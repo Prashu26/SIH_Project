@@ -17,13 +17,17 @@ services:
     ports:
       - "8081:8080"
     environment:
-      - MONGODB_URI=mongodb://mongo:27017/mernapp
-      - PORT=8080
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/mernapp}
+      - PORT=${PORT:-8080}
       - PROVIDER_URL=http://blockchain:8545
       - IPFS_API_URL=http://ipfs:5001
-      - POLYGON_RPC_URL=https://rpc-mumbai.maticvigil.com
+      - POLYGON_RPC_URL=${POLYGON_RPC_URL:-https://rpc-mumbai.maticvigil.com}
       - PRIVATE_KEY=${PRIVATE_KEY:-}
       - CONTRACT_ADDRESS=${CONTRACT_ADDRESS:-}
+      - JWT_SECRET=${JWT_SECRET:-}
+      - NODE_ENV=${NODE_ENV:-development}
+    env_file:
+      - .env
     depends_on:
       - mongo
       - blockchain-deployer
@@ -64,8 +68,10 @@ services:
     container_name: blockchain-deployer
     environment:
       - PROVIDER_URL=http://blockchain:8545
-      - POLYGON_RPC_URL=https://rpc-mumbai.maticvigil.com
+      - POLYGON_RPC_URL=${POLYGON_RPC_URL:-https://rpc-mumbai.maticvigil.com}
       - PRIVATE_KEY=${PRIVATE_KEY:-}
+    env_file:
+      - .env
     depends_on:
       - blockchain
     networks:

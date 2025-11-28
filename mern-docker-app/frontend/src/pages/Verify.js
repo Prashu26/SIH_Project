@@ -21,16 +21,49 @@ export default function Verify() {
     setResult(null);
 
     try {
-      const response = await fetch(`${API_BASE}/api/verify/${query.trim()}`);
+      const response = await fetch(`${API_BASE}/api/verify/${encodeURIComponent(query.trim())}`);
       const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.message || 'Credential could not be verified.');
+      // Handle our new API structure
+      if (!response.ok && response.status === 404) {
+        setError('Certificate not found. Please check the ID and try again.');
+        setIsLoading(false);
+        return;
+      }
+      
+      if (!response.ok && response.status === 202) {
+        // Certificate exists but not anchored
+        setResult({
+          ...data,
+          status: 'Not Anchored',
+          message: 'Certificate is valid but not yet anchored on blockchain'
+        });
         setIsLoading(false);
         return;
       }
 
-      setResult(data);
+      if (!response.ok) {
+        setError(data.message || 'Certificate could not be verified.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Transform the result for our display
+      const transformedResult = {
+        ...data,
+        status: data.success ? (data.status === 'Valid' ? 'Authentic' : data.status) : 'Invalid',
+        certificate: {
+          ...data.certificate,
+          blockchainVerified: data.blockchain?.verified || false,
+          merkleRoot: data.blockchain?.merkleRoot,
+          batchId: data.blockchain?.batchId,
+          blockchainTxHash: data.blockchain?.blockchainTxHash,
+          localVerification: data.blockchain?.localVerification
+        },
+        blockchain: data.blockchain
+      };
+
+      setResult(transformedResult);
     } catch (err) {
       setError(err.message || 'Unexpected error while verifying.');
     } finally {
@@ -52,10 +85,28 @@ export default function Verify() {
       form.append('file', file);
       const res = await fetch(`${API_BASE}/api/verify/upload`, { method: 'POST', body: form });
       const data = await res.json();
-      if (!res.ok) {
+      
+      if (!res.ok && res.status === 404) {
+        setError('No certificate matches the uploaded file. The file may not be a valid certificate or might have been tampered with.');
+      } else if (!res.ok) {
         setError(data.message || 'Verification failed');
       } else {
-        setResult(data);
+        // Transform the result for our display
+        const transformedResult = {
+          ...data,
+          status: data.success ? (data.status === 'Valid' ? 'Authentic' : data.status) : 'Invalid',
+          certificate: {
+            ...data.certificate,
+            blockchainVerified: data.blockchain?.verified || false,
+            merkleRoot: data.blockchain?.merkleRoot,
+            batchId: data.blockchain?.batchId,
+            blockchainTxHash: data.blockchain?.blockchainTxHash,
+            localVerification: data.blockchain?.localVerification,
+            fileHash: data.fileHash
+          },
+          blockchain: data.blockchain
+        };
+        setResult(transformedResult);
       }
     } catch (err) {
       setError(err.message || 'Unexpected error while verifying file.');
@@ -94,10 +145,56 @@ export default function Verify() {
       {error && <p className="form-feedback error">{error}</p>}
       {result && (
         <div className="verify-result-card">
-          <h4 className={`verify-status ${result.status === 'Authentic' ? 'authentic' : 'error'}`}>
-            {result.status === 'Authentic' ? '✓ Verified Authentic' : '✗ ' + result.status}
+          <h4 className={`verify-status ${result.status === 'Authentic' ? 'authentic' : result.status === 'Not Anchored' ? 'warning' : 'error'}`}>
+            {result.status === 'Authentic' ? '✓ Verified Authentic' : 
+             result.status === 'Not Anchored' ? '⚠ Valid but Not Anchored' :
+             '✗ ' + result.status}
           </h4>
           {result.message && <p className="verify-message">{result.message}</p>}
+          
+          {/* Blockchain Status Section */}
+          {result.blockchain && (
+            <div className="blockchain-status">
+              <h5>Blockchain Verification Status</h5>
+              <dl>
+                <dt>Blockchain Verified:</dt>
+                <dd className={result.blockchain.verified ? 'text-success' : 'text-warning'}>
+                  {result.blockchain.verified ? '✅ Yes' : '❌ No'}
+                  {result.blockchain.reason && ` (${result.blockchain.reason})`}
+                </dd>
+                
+                {result.blockchain.localVerification !== undefined && (
+                  <>
+                    <dt>Cryptographic Proof:</dt>
+                    <dd className={result.blockchain.localVerification ? 'text-success' : 'text-error'}>
+                      {result.blockchain.localVerification ? '✅ Valid' : '❌ Invalid'}
+                    </dd>
+                  </>
+                )}
+                
+                {result.blockchain.merkleRoot && (
+                  <>
+                    <dt>Merkle Root:</dt>
+                    <dd className="hash">{result.blockchain.merkleRoot}</dd>
+                  </>
+                )}
+                
+                {result.blockchain.batchId && (
+                  <>
+                    <dt>Batch ID:</dt>
+                    <dd>#{result.blockchain.batchId}</dd>
+                  </>
+                )}
+                
+                {result.blockchain.blockchainTxHash && (
+                  <>
+                    <dt>Blockchain Transaction:</dt>
+                    <dd className="hash">{result.blockchain.blockchainTxHash}</dd>
+                  </>
+                )}
+              </dl>
+            </div>
+          )}
           
           {result.certificate && (
             <div className="cert-details">
@@ -155,6 +252,32 @@ export default function Verify() {
                         <dd>{result.certificate.course.platform}</dd>
                       </>
                     )}
+                  </>
+                )}
+                
+                {/* NCVQ Information */}
+                {(result.certificate.ncvqLevel || result.certificate.ncvqQualificationTitle) && (
+                  <>
+                    {result.certificate.ncvqLevel && (
+                      <>
+                        <dt>NCVQ Level:</dt>
+                        <dd>{result.certificate.ncvqLevel}</dd>
+                      </>
+                    )}
+                    {result.certificate.ncvqQualificationTitle && (
+                      <>
+                        <dt>Qualification:</dt>
+                        <dd>{result.certificate.ncvqQualificationTitle}</dd>
+                      </>
+                    )}
+                  </>
+                )}
+                
+                {/* File Hash for uploaded files */}
+                {result.certificate.fileHash && (
+                  <>
+                    <dt>File Hash:</dt>
+                    <dd className="hash">{result.certificate.fileHash}</dd>
                   </>
                 )}
               </dl>
