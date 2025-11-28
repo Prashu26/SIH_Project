@@ -36,7 +36,8 @@ const Header = () => {
     { path: '/verify', label: 'Verify', icon: 'bx-shield-check' },
     { path: '/features', label: 'Features', icon: 'bx-star' },
     { path: '/about', label: 'About', icon: 'bx-info-circle' },
-    { path: '/contact', label: 'Contact', icon: 'bx-phone' }
+    { path: '/contact', label: 'Contact', icon: 'bx-phone' },
+    { path: '/team', label: 'Team', icon: 'bx-group' }
   ];
 
   const dashboardItems = user ? [

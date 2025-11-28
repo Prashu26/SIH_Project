@@ -14,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Features from './pages/Features';
+import Team from './pages/Team';
 
 // Auth context for managing user state
 const AuthContext = React.createContext();
@@ -41,7 +42,7 @@ function Layout() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-900 via-red-900 to-black">
       {/* Background elements */}
       <div className="fixed inset-0 opacity-10 pointer-events-none"></div>
       <div className="fixed top-[20%] right-[-5%] h-0 w-[40rem] shadow-[0_0_50px_#4cc9f0] -rotate-[30deg] opacity-30"></div>
@@ -52,8 +53,8 @@ function Layout() {
       {/* Show hero only on landing page */}
       {isLandingPage && <Hero />}
       
-      {/* Main content */}
-      <main className={`${!isLandingPage ? 'pt-20' : ''} ${isDashboard ? 'min-h-screen' : ''}`}>
+      {/* Main content grows to push footer down */}
+      <main className={`${!isLandingPage ? 'pt-20' : ''} ${isDashboard ? 'min-h-screen' : ''} flex-1`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -62,6 +63,7 @@ function Layout() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/features" element={<Features />} />
+          <Route path="/team" element={<Team />} />
           <Route 
             path="/learner/*" 
             element={
@@ -92,7 +94,7 @@ function Layout() {
       
       {/* Footer for non-dashboard pages */}
       {!isDashboard && (
-        <footer className="bg-gray-900/90 backdrop-blur-md border-t border-blue-500/20 py-8">
+        <footer className="mt-auto bg-gray-900/90 backdrop-blur-md border-t border-blue-500/20 py-8">
           <div className="container mx-auto px-4 text-center">
             <p className="text-gray-400">
               © {new Date().getFullYear()} Skill Credentialing. Powered by blockchain technology.

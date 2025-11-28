@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import API_BASE from '../services/api';
+import Spline from "@splinetool/react-spline";
 
 export default function Verify() {
   const [query, setQuery] = useState('');
@@ -7,6 +8,7 @@ export default function Verify() {
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSplineVerify, setShowSplineVerify] = useState(true);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -116,238 +118,91 @@ export default function Verify() {
   };
 
   return (
-    <div className="card form-card">
-      <h3>Instant verification</h3>
-      <p className="lead">Paste a credential ID to confirm its authenticity in real time.</p>
-      <form className="form" onSubmit={submit}>
-        <label>
-          Credential ID
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="e.g. CERT-8F92-AK3"
-            required
-          />
-        </label>
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Verifying…' : 'Verify credential'}
-        </button>
-      </form>
-      <hr />
-      <h4 className="section-title">Upload a document (PDF) to verify</h4>
-      <form className="form" onSubmit={uploadFile}>
-        <label>
-          Document PDF
-          <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files && e.target.files[0])} />
-        </label>
-        <button type="submit" disabled={isLoading}>{isLoading ? 'Verifying…' : 'Upload & Verify'}</button>
-      </form>
-      {error && <p className="form-feedback error">{error}</p>}
-      {result && (
-        <div className="verify-result-card">
-          <h4 className={`verify-status ${result.status === 'Authentic' ? 'authentic' : result.status === 'Not Anchored' ? 'warning' : 'error'}`}>
-            {result.status === 'Authentic' ? '✓ Verified Authentic' : 
-             result.status === 'Not Anchored' ? '⚠ Valid but Not Anchored' :
-             '✗ ' + result.status}
-          </h4>
-          {result.message && <p className="verify-message">{result.message}</p>}
-          
-          {/* Blockchain Status Section */}
-          {result.blockchain && (
-            <div className="blockchain-status">
-              <h5>Blockchain Verification Status</h5>
-              <dl>
-                <dt>Blockchain Verified:</dt>
-                <dd className={result.blockchain.verified ? 'text-success' : 'text-warning'}>
-                  {result.blockchain.verified ? '✅ Yes' : '❌ No'}
-                  {result.blockchain.reason && ` (${result.blockchain.reason})`}
-                </dd>
-                
-                {result.blockchain.localVerification !== undefined && (
-                  <>
-                    <dt>Cryptographic Proof:</dt>
-                    <dd className={result.blockchain.localVerification ? 'text-success' : 'text-error'}>
-                      {result.blockchain.localVerification ? '✅ Valid' : '❌ Invalid'}
-                    </dd>
-                  </>
-                )}
-                
-                {result.blockchain.merkleRoot && (
-                  <>
-                    <dt>Merkle Root:</dt>
-                    <dd className="hash">{result.blockchain.merkleRoot}</dd>
-                  </>
-                )}
-                
-                {result.blockchain.batchId && (
-                  <>
-                    <dt>Batch ID:</dt>
-                    <dd>#{result.blockchain.batchId}</dd>
-                  </>
-                )}
-                
-                {result.blockchain.blockchainTxHash && (
-                  <>
-                    <dt>Blockchain Transaction:</dt>
-                    <dd className="hash">{result.blockchain.blockchainTxHash}</dd>
-                  </>
-                )}
-              </dl>
+    <div className="relative min-h-screen flex flex-col items-center justify-start overflow-hidden">
+      {/* BACKGROUND SPLINE — sits behind everything */}
+      <div aria-hidden className="fixed inset-0 -z-10">
+        {showSplineVerify ? (
+          <>
+            <div className="absolute top-0 left-0 h-full w-1/2 overflow-hidden">
+              <Spline
+                scene="https://prod.spline.design/RlNwFBmFhhAB0rUR/scene.splinecode"
+                className="absolute inset-0 w-full h-full pointer-events-auto"
+                onError={() => setShowSplineVerify(false)}
+              />
             </div>
-          )}
-          
-          {result.certificate && (
-            <div className="cert-details">
-              <h5>Certificate Details</h5>
-              <dl>
-                <dt>Certificate ID:</dt>
-                <dd>{result.certificate.certificateId}</dd>
-                
-                <dt>Status:</dt>
-                <dd><span className={`badge ${result.certificate.status?.toLowerCase()}`}>{result.certificate.status}</span></dd>
-                
-                <dt>Issue Date:</dt>
-                <dd>{new Date(result.certificate.issueDate).toLocaleDateString()}</dd>
-                
-                {result.certificate.validUntil && (
-                  <>
-                    <dt>Valid Until:</dt>
-                    <dd>{new Date(result.certificate.validUntil).toLocaleDateString()}</dd>
-                  </>
-                )}
-                
-                {result.certificate.learner && (
-                  <>
-                    <dt>Learner:</dt>
-                    <dd>{result.certificate.learner.name} ({result.certificate.learner.email})</dd>
-                    {result.certificate.learner.learnerId && (
-                      <>
-                        <dt>Learner ID:</dt>
-                        <dd>{result.certificate.learner.learnerId}</dd>
-                      </>
-                    )}
-                  </>
-                )}
-                
-                {result.certificate.institute && (
-                  <>
-                    <dt>Issued By:</dt>
-                    <dd>{result.certificate.institute.name}</dd>
-                    {result.certificate.institute.registrationId && (
-                      <>
-                        <dt>Registration ID:</dt>
-                        <dd>{result.certificate.institute.registrationId}</dd>
-                      </>
-                    )}
-                  </>
-                )}
-                
-                {result.certificate.course && (
-                  <>
-                    <dt>Course:</dt>
-                    <dd>{result.certificate.course.title}</dd>
-                    {result.certificate.course.platform && (
-                      <>
-                        <dt>Platform:</dt>
-                        <dd>{result.certificate.course.platform}</dd>
-                      </>
-                    )}
-                  </>
-                )}
-                
-                {/* NCVQ Information */}
-                {(result.certificate.ncvqLevel || result.certificate.ncvqQualificationTitle) && (
-                  <>
-                    {result.certificate.ncvqLevel && (
-                      <>
-                        <dt>NCVQ Level:</dt>
-                        <dd>{result.certificate.ncvqLevel}</dd>
-                      </>
-                    )}
-                    {result.certificate.ncvqQualificationTitle && (
-                      <>
-                        <dt>Qualification:</dt>
-                        <dd>{result.certificate.ncvqQualificationTitle}</dd>
-                      </>
-                    )}
-                  </>
-                )}
-                
-                {/* File Hash for uploaded files */}
-                {result.certificate.fileHash && (
-                  <>
-                    <dt>File Hash:</dt>
-                    <dd className="hash">{result.certificate.fileHash}</dd>
-                  </>
-                )}
-              </dl>
-              
-              <h5>Blockchain Verification</h5>
-              <dl>
-                {result.certificate.artifactHash && (
-                  <>
-                    <dt>Artifact Hash:</dt>
-                    <dd className="hash">{result.certificate.artifactHash}</dd>
-                  </>
-                )}
-                
-                {result.certificate.ipfsCid && (
-                  <>
-                    <dt>IPFS CID:</dt>
-                    <dd className="hash">{result.certificate.ipfsCid}</dd>
-                  </>
-                )}
-                
-                {result.certificate.blockchainTxHash && (
-                  <>
-                    <dt>Blockchain TX:</dt>
-                    <dd className="hash">{result.certificate.blockchainTxHash}</dd>
-                  </>
-                )}
-                
-                {result.certificate.merkleRoot && (
-                  <>
-                    <dt>Merkle Root:</dt>
-                    <dd className="hash">{result.certificate.merkleRoot}</dd>
-                  </>
-                )}
-                
-                {result.certificate.batchId && (
-                  <>
-                    <dt>Batch ID:</dt>
-                    <dd>#{result.certificate.batchId}</dd>
-                  </>
-                )}
-              </dl>
-              
-              {result.certificate.modulesAwarded && result.certificate.modulesAwarded.length > 0 && (
-                <>
-                  <h5>Modules Awarded</h5>
-                  <ul className="module-list">
-                    {result.certificate.modulesAwarded.map((module, idx) => (
-                      <li key={idx}>{module}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
+            <div className="absolute top-0 right-0 h-full w-1/2 overflow-hidden">
+              <div style={{ width: '100%', height: '100%', transform: 'scaleX(-1)' }}>
+                <Spline
+                  scene="https://prod.spline.design/RlNwFBmFhhAB0rUR/scene.splinecode"
+                  className="absolute inset-0 w-full h-full pointer-events-auto"
+                  onError={() => setShowSplineVerify(false)}
+                />
+              </div>
             </div>
-          )}
-          
-          {result.blockchain && (
-            <details className="blockchain-details">
-              <summary>Raw Blockchain Data</summary>
-              <pre>{JSON.stringify(result.blockchain, null, 2)}</pre>
-            </details>
-          )}
-          
-          {!result.certificate && !result.blockchain && (
-            <details className="raw-response">
-              <summary>Raw Response</summary>
-              <pre>{JSON.stringify(result, null, 2)}</pre>
-            </details>
-          )}
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-700 to-blue-800" />
+        )}
+      </div>
+
+      {/* Centered verify box (no large card, compact box for ID + upload) */}
+      <div className="relative z-10 w-full min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-lg text-left text-white">
+          <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl">
+            <h1 className="text-2xl font-semibold mb-2">Verify</h1>
+            <p className="mb-6 text-gray-300">Paste credential ID to verify</p>
+
+            <form onSubmit={submit} className="mb-6">
+              <label className="block text-sm text-gray-200 mb-2">Credential ID</label>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="e.g. CERT-8F92-AK3"
+                className="w-full bg-transparent border border-gray-700 rounded px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required
+              />
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-400 to-cyan-400 text-black font-medium rounded hover:brightness-95 disabled:opacity-60"
+                >
+                  {isLoading ? 'Verifying…' : 'Verify'}
+                </button>
+              </div>
+            </form>
+
+            <hr className="border-gray-700 my-6" />
+
+            <h2 className="text-xl font-medium mb-2">Upload</h2>
+            <p className="mb-4 text-gray-300">Upload a PDF to verify</p>
+
+            <form onSubmit={uploadFile} className="mb-2">
+              <label className="block text-sm text-gray-200 mb-2">Document (PDF)</label>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setFile(e.target.files && e.target.files[0])}
+                className="w-full text-sm text-gray-200 mb-4"
+              />
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-400 to-cyan-400 text-black font-medium rounded hover:brightness-95 disabled:opacity-60"
+                >
+                  {isLoading ? 'Verifying…' : 'Upload & Verify'}
+                </button>
+              </div>
+            </form>
+
+            {error && <p className="text-red-400 mt-4">{error}</p>}
+            {result && (
+              <pre className="text-left mt-4 bg-white/5 text-sm p-3 rounded overflow-auto max-h-60">{JSON.stringify(result, null, 2)}</pre>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

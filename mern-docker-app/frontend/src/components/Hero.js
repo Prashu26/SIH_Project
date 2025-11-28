@@ -13,11 +13,8 @@ const Hero = () => {
         { label: 'Successful Verifications', value: 89650, icon: 'bx-shield-check' }
     ];
 
-    const features = [
-        { icon: 'bx-lock-alt', title: 'Blockchain Security', desc: 'Immutable certificate verification' },
-        { icon: 'bx-fast-forward', title: 'Instant Verification', desc: 'Real-time certificate validation' },
-        { icon: 'bx-globe', title: 'Global Recognition', desc: 'Internationally accepted credentials' }
-    ];
+    // features removed (no overlay/cards shown)
+    const features = [];
 
     // Animate numbers on component mount
     useEffect(() => {
@@ -121,29 +118,14 @@ const Hero = () => {
                     {/* Right Content - 3D Animation or Features */}
                     <div className="relative">
                         {/* Try to load Spline, fallback to features if failed */}
-                        <div className="relative h-96 lg:h-[600px]">
+                        <div className="relative h-96 lg:h-[900px]">
                             <Spline 
                                 className="absolute inset-0 w-full h-full"
                                 scene="https://prod.spline.design/5zwZsiILV3BBuf3I/scene.splinecode"
                                 onError={() => console.log('Spline failed to load, showing features instead')}
                             />
                             
-                            {/* Features Grid - Overlay or Fallback */}
-                            <div className="absolute inset-0 flex items-center justify-center lg:opacity-0 hover:opacity-100 transition-opacity duration-300 bg-black/50 backdrop-blur-sm rounded-2xl">
-                                <div className="grid gap-6 p-8">
-                                    {features.map((feature, index) => (
-                                        <div key={index} className="flex items-center gap-4 bg-gray-900/80 p-4 rounded-xl backdrop-blur-sm border border-gray-700">
-                                            <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-lg">
-                                                <i className={`bx ${feature.icon} text-white text-xl`}></i>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-white font-semibold">{feature.title}</h3>
-                                                <p className="text-gray-400 text-sm">{feature.desc}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            {/* Features overlay removed; Spline is shown full */}
                         </div>
                     </div>
                 </div>

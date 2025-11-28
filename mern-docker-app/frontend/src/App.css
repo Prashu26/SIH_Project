@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --bg: #050b1f;
-  --bg-alt: #0b1433;
-  --surface: rgba(11, 20, 51, 0.78);
-  --accent: #4cc9f0;
-  --accent-strong: #f72585;
-  --text: #f5f8ff;
-  --text-muted: #9aa7d1;
+  --bg: #1f1205;           /* deep brown */
+  --bg-alt: #2b1709;       /* darker warm brown */
+  --surface: rgba(43, 22, 9, 0.78); /* card surface in brown tint */
+  --accent: #c98b4a;       /* warm golden-brown accent */
+  --accent-strong: #b04a2f;/* stronger warm accent */
+  --text: #f5f3ee;
+  --text-muted: #bba894;
 }
 
 /* Custom animations */
@@ -40,12 +40,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+  background: linear-gradient(to bottom, #ac8a1c, #5b4708);
   border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #2563eb, #7c3aed);
+  background: linear-gradient(to bottom, #756e13, #c49713);
 }
 
 *,
@@ -57,7 +57,7 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
-  background: linear-gradient(160deg, var(--bg), hsl(36, 67%, 13%) 45%, #091237 90%);
+  background: linear-gradient(160deg, var(--bg), #4a2b1a 45%, #2a1a0f 90%);
   color: var(--text);
   min-height: 100vh;
 }
