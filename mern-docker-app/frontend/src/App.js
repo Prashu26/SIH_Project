@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import './App.css';
+import Header from './components/header';
 import NavBar from './components/NavBar';
+import Hero from './components/Hero';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -42,73 +44,17 @@ function Layout({ token, role, onLogout }) {
   );
 }
 
-function App() {
-  const [token, setToken] = useState(() => localStorage.getItem('token') || '');
-  const [role, setRole] = useState(() => (localStorage.getItem('role') || '').toLowerCase());
-
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem('token', token);
-    } else {
-      localStorage.removeItem('token');
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (role) {
-      localStorage.setItem('role', role);
-    } else {
-      localStorage.removeItem('role');
-    }
-  }, [role]);
-
-  const handleLogin = (newToken, newRole) => {
-    setToken(newToken);
-    setRole((newRole || '').toLowerCase());
-  };
-
-  const handleLogout = () => {
-    setToken('');
-    setRole('');
-  };
-
+export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout token={token} role={role} onLogout={handleLogout} />}>
-          <Route index element={<Home />} />
-          <Route path="login" element={<Login onLogin={handleLogin} />} />
-          <Route path="register" element={<Register />} />
-          <Route path="verify" element={<Verify />} />
-          <Route
-            path="learner"
-            element={
-              <RequireAuth token={token} role={role} allowedRoles={['learner']}>
-                <LearnerDashboard token={token} />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="institution"
-            element={
-              <RequireAuth token={token} role={role} allowedRoles={['institute']}>
-                <InstitutionDashboard token={token} />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="admin"
-            element={
-              <RequireAuth token={token} role={role} allowedRoles={['admin']}>
-                <AdminDashboard token={token} />
-              </RequireAuth>
-            }
-          />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  );
-}
+    <main>
+      <img className="absolute top-0 right-0 opacity-60 -z-1" src="/gradient.png" alt="Gradient-img" /> 
 
-export default App;
+       <div className= "h-0 w-[40rem] absolute top-[20%] right-[-5%] shadow-[0_0_20px_#e99b63] -rotate-[30deg]"></div>
+
+       <Header />
+       <Hero />
+     </main>
+
+     
+  )
+}
