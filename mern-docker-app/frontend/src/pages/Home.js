@@ -74,129 +74,127 @@ const Home = () => {
 
     return (
         <div className="space-y-20">
-            {/* Features Section */}
+            {/* Features Section (winter/stats style) */}
             <section className="container mx-auto px-6 py-20">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl font-bold mb-4">
-                        <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                <div className="relative rounded-2xl p-8 bg-gradient-to-r from-sky-900/10 via-indigo-900/8 to-slate-900/8 backdrop-blur-md border border-sky-200/8 overflow-hidden">
+                    <div className="absolute -top-16 -left-16 w-72 h-72 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.04),transparent)] pointer-events-none rounded-2xl" />
+                    <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[radial-gradient(ellipse_at_bottom_right,rgba(200,230,255,0.02),transparent)] pointer-events-none rounded-2xl" />
+
+                    <div className="text-center mb-8 relative z-10">
+                        <h2 className="text-4xl font-bold text-sky-100 mb-4">
                             Why Choose Our Platform?
-                        </span>
-                    </h2>
-                    <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                        Experience the future of credential verification with our blockchain-powered platform
-                    </p>
-                </div>
-
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {features.map((feature, index) => (
-                        <div key={index} className="group bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-6 hover:border-blue-500/50 transition-all duration-300 hover:scale-105">
-                            <div className={`bg-gradient-to-r ${feature.color} w-16 h-16 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                                <i className={`bx ${feature.icon} text-2xl text-white`}></i>
-                            </div>
-                            <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-                            <p className="text-gray-300">{feature.description}</p>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* How it Works Section */}
-            <section className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 backdrop-blur-md">
-                <div className="container mx-auto px-6 py-20">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold mb-4 text-white">How It Works</h2>
-                        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                            Simple steps to secure, issue, and verify digital credentials
+                        </h2>
+                        <p className="text-lg text-sky-200/80 max-w-3xl mx-auto">
+                            Experience the future of credential verification with our blockchain-powered platform
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {steps.map((step, index) => (
-                            <div key={index} className="text-center relative">
-                                {/* Connection Line */}
-                                {index < steps.length - 1 && (
-                                    <div className="hidden md:block absolute top-16 left-[60%] w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                                )}
-                                
-                                <div className="bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-8 relative z-10">
-                                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <i className={`bx ${step.icon} text-3xl text-white`}></i>
-                                    </div>
-                                    <div className="text-blue-400 font-bold text-lg mb-2">Step {step.step}</div>
-                                    <h3 className="text-2xl font-bold text-white mb-4">{step.title}</h3>
-                                    <p className="text-gray-300">{step.description}</p>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
+                        {features.map((feature, index) => (
+                            <div
+                                key={index}
+                                className="rounded-2xl p-6 bg-white/3 border border-white/6 backdrop-blur-sm flex flex-col items-center text-center"
+                            >
+                                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-r ${feature.color} mb-4 shadow-[0_8px_30px_rgba(99,102,241,0.06)]`}>
+                                    <i className={`bx ${feature.icon} text-2xl text-white`}></i>
                                 </div>
+                                <h3 className="text-xl font-semibold text-sky-100 mb-2">{feature.title}</h3>
+                                <p className="text-sky-200/80">{feature.description}</p>
                             </div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* Quick Actions */}
+            {/* How it Works (winter/stats style) */}
             <section className="container mx-auto px-6 py-20">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl font-bold mb-4 text-white">Get Started Today</h2>
-                    <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                        Join thousands of institutions and learners already using our platform
-                    </p>
-                </div>
+                <div className="relative rounded-2xl p-8 bg-gradient-to-r from-sky-900/10 via-indigo-900/8 to-slate-900/8 backdrop-blur-md border border-sky-200/8 overflow-hidden">
+                    <div className="absolute -top-16 -left-16 w-72 h-72 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.04),transparent)] pointer-events-none rounded-2xl" />
+                    <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[radial-gradient(ellipse_at_bottom_right,rgba(200,230,255,0.02),transparent)] pointer-events-none rounded-2xl" />
 
-                <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-                    <Link to="/register" className="group bg-gradient-to-r from-blue-600 to-purple-600 p-8 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105">
-                        <i className="bx bx-user-plus text-4xl text-white mb-4 block group-hover:scale-110 transition-transform"></i>
-                        <h3 className="text-2xl font-bold text-white mb-3">Sign Up</h3>
-                        <p className="text-blue-100">Create your account and start issuing or collecting certificates</p>
-                        <div className="mt-4 text-blue-200 group-hover:text-white transition-colors">
-                            Get Started <i className="bx bx-right-arrow-alt ml-2"></i>
-                        </div>
-                    </Link>
+                    <div className="text-center mb-8 relative z-10">
+                        <h2 className="text-4xl font-bold text-sky-100 mb-4">How It Works</h2>
+                        <p className="text-lg text-sky-200/80 max-w-2xl mx-auto">Simple steps to secure, issue, and verify digital credentials</p>
+                    </div>
 
-                    <Link to="/verify" className="group bg-gray-800/50 backdrop-blur-md border border-gray-700 p-8 rounded-2xl hover:border-blue-500/50 transition-all duration-300 hover:scale-105">
-                        <i className="bx bx-search text-4xl text-blue-400 mb-4 block group-hover:scale-110 transition-transform"></i>
-                        <h3 className="text-2xl font-bold text-white mb-3">Verify Certificate</h3>
-                        <p className="text-gray-300">Instantly verify any certificate using our blockchain verification</p>
-                        <div className="mt-4 text-blue-400 group-hover:text-blue-300 transition-colors">
-                            Verify Now <i className="bx bx-right-arrow-alt ml-2"></i>
-                        </div>
-                    </Link>
-
-                    <Link to="/features" className="group bg-gray-800/50 backdrop-blur-md border border-gray-700 p-8 rounded-2xl hover:border-purple-500/50 transition-all duration-300 hover:scale-105">
-                        <i className="bx bx-star text-4xl text-purple-400 mb-4 block group-hover:scale-110 transition-transform"></i>
-                        <h3 className="text-2xl font-bold text-white mb-3">Explore Features</h3>
-                        <p className="text-gray-300">Discover all the powerful features our platform offers</p>
-                        <div className="mt-4 text-purple-400 group-hover:text-purple-300 transition-colors">
-                            Learn More <i className="bx bx-right-arrow-alt ml-2"></i>
-                        </div>
-                    </Link>
+                    <div className="grid md:grid-cols-3 gap-8 relative z-10">
+                        {steps.map((step, index) => (
+                            <div key={index} className="rounded-2xl p-6 bg-white/3 border border-white/6 backdrop-blur-sm text-center">
+                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-sky-300 to-indigo-300 mx-auto mb-4 shadow-[0_12px_40px_rgba(99,102,241,0.06)]">
+                                    <i className={`bx ${step.icon} text-3xl text-white`}></i>
+                                </div>
+                                <div className="text-sky-200 font-bold mb-2">Step {step.step}</div>
+                                <h3 className="text-2xl font-semibold text-sky-100 mb-2">{step.title}</h3>
+                                <p className="text-sky-200/80">{step.description}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </section>
 
-            {/* Testimonials */}
-            <section className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur-md">
-                <div className="container mx-auto px-6 py-20">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold mb-4 text-white">What Our Users Say</h2>
-                        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                            Hear from institutions and learners who trust our platform
-                        </p>
+            {/* Quick Actions (winter/stats style) */}
+            <section className="container mx-auto px-6 py-20">
+                <div className="relative rounded-2xl p-8 bg-gradient-to-r from-sky-900/10 via-indigo-900/8 to-slate-900/8 backdrop-blur-md border border-sky-200/8 overflow-hidden">
+                    <div className="absolute -top-16 -left-16 w-72 h-72 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.04),transparent)] pointer-events-none rounded-2xl" />
+                    <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[radial-gradient(ellipse_at_bottom_right,rgba(200,230,255,0.02),transparent)] pointer-events-none rounded-2xl" />
+
+                    <div className="text-center mb-8 relative z-10">
+                        <h2 className="text-4xl font-bold text-sky-100 mb-4">Get Started Today</h2>
+                        <p className="text-lg text-sky-200/80 max-w-2xl mx-auto">Join thousands of institutions and learners already using our platform</p>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {testimonials.map((testimonial, index) => (
-                            <div key={index} className="bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-6">
-                                <div className="flex items-center mb-4">
-                                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 w-12 h-12 rounded-full flex items-center justify-center mr-4">
-                                        <span className="text-white font-bold">{testimonial.avatar}</span>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-white font-semibold">{testimonial.name}</h3>
-                                        <p className="text-gray-400 text-sm">{testimonial.role}</p>
-                                    </div>
+                    <div className="grid md:grid-cols-3 gap-8 relative z-10 max-w-4xl mx-auto">
+                        <Link to="/register" className="rounded-2xl p-6 bg-white/3 border border-white/6 backdrop-blur-sm text-center flex flex-col items-center">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 mb-4 shadow-[0_8px_30px_rgba(99,102,241,0.06)]">
+                                <i className="bx bx-user-plus text-2xl text-white"></i>
+                            </div>
+                            <h3 className="text-xl font-semibold text-sky-100 mb-2">Sign Up</h3>
+                            <p className="text-sky-200/80">Create your account and start issuing or collecting certificates</p>
+                        </Link>
+
+                        <Link to="/verify" className="rounded-2xl p-6 bg-white/3 border border-white/6 backdrop-blur-sm text-center flex flex-col items-center">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400 mb-4 shadow-[0_8px_30px_rgba(99,102,241,0.06)]">
+                                <i className="bx bx-search text-2xl text-white"></i>
+                            </div>
+                            <h3 className="text-xl font-semibold text-sky-100 mb-2">Verify Certificate</h3>
+                            <p className="text-sky-200/80">Instantly verify any certificate using our blockchain verification</p>
+                        </Link>
+
+                        <Link to="/features" className="rounded-2xl p-6 bg-white/3 border border-white/6 backdrop-blur-sm text-center flex flex-col items-center">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 shadow-[0_8px_30px_rgba(99,102,241,0.06)]">
+                                <i className="bx bx-star text-2xl text-white"></i>
+                            </div>
+                            <h3 className="text-xl font-semibold text-sky-100 mb-2">Explore Features</h3>
+                            <p className="text-sky-200/80">Discover all the powerful features our platform offers</p>
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* Testimonials -> winter-stats style */}
+            <section className="container mx-auto px-6 py-20">
+                <div className="relative rounded-2xl p-8 bg-gradient-to-r from-sky-900/10 via-indigo-900/8 to-slate-900/8 backdrop-blur-md border border-sky-200/8 overflow-hidden">
+                    {/* frosted radial sheen (matches stats design) */}
+                    <div className="absolute -top-16 -left-16 w-72 h-72 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.04),transparent)] pointer-events-none rounded-2xl" />
+                    <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[radial-gradient(ellipse_at_bottom_right,rgba(200,230,255,0.02),transparent)] pointer-events-none rounded-2xl" />
+
+                    <div className="grid md:grid-cols-3 gap-8 text-center relative z-10">
+                        {testimonials.map((t, i) => (
+                            <div
+                                key={i}
+                                className="rounded-2xl p-6 bg-white/2 border border-white/6 backdrop-blur-sm flex flex-col items-center text-center"
+                            >
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-sky-300 to-indigo-300 mb-4 shadow-[0_8px_30px_rgba(99,102,241,0.06)]">
+                                    <span className="text-white font-bold">{t.avatar}</span>
                                 </div>
-                                <p className="text-gray-300 italic">"{testimonial.comment}"</p>
-                                <div className="flex text-yellow-400 mt-3">
-                                    {[...Array(5)].map((_, i) => (
-                                        <i key={i} className="bx bxs-star text-sm"></i>
+
+                                <h3 className="text-lg font-semibold text-sky-100 mb-1">{t.name}</h3>
+                                <p className="text-sm text-sky-200/90 mb-3 capitalize">{t.role}</p>
+                                <p className="text-sky-100/85 italic">"{t.comment}"</p>
+
+                                <div className="flex items-center gap-1 mt-4 text-yellow-400">
+                                    {[...Array(5)].map((_, idx) => (
+                                        <i key={idx} className="bx bxs-star text-sm"></i>
                                     ))}
                                 </div>
                             </div>
@@ -205,44 +203,81 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Stats Section */}
+            {/* Stats Section (winter vibe) */}
             <section className="container mx-auto px-6 py-20">
-                <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-md border border-blue-500/30 rounded-2xl p-8">
-                    <div className="grid md:grid-cols-4 gap-8 text-center">
+                <div className="relative rounded-2xl p-8 bg-gradient-to-r from-sky-900/10 via-indigo-900/8 to-slate-900/8 backdrop-blur-md border border-sky-200/8 overflow-hidden">
+                    {/* subtle frosted radial sheen */}
+                    <div className="absolute -top-16 -left-16 w-72 h-72 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.04),transparent)] pointer-events-none" />
+                    <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[radial-gradient(ellipse_at_bottom_right,rgba(200,230,255,0.02),transparent)] pointer-events-none" />
+
+                    <div className="grid md:grid-cols-4 gap-8 text-center relative z-10">
                         <div>
-                            <div className="text-4xl font-bold text-blue-400 mb-2">15,420+</div>
-                            <p className="text-gray-300">Certificates Issued</p>
+                            <div className="flex items-center justify-center gap-3 text-4xl font-bold text-sky-100 drop-shadow-md mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-sky-200" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
+                                <span>15,420+</span>
+                            </div>
+                            <p className="text-sky-200/80">Certificates Issued</p>
                         </div>
+
                         <div>
-                            <div className="text-4xl font-bold text-purple-400 mb-2">245+</div>
-                            <p className="text-gray-300">Partner Institutions</p>
+                            <div className="flex items-center justify-center gap-3 text-4xl font-bold text-indigo-100 drop-shadow-md mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-indigo-200" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
+                                <span>245+</span>
+                            </div>
+                            <p className="text-indigo-200/80">Partner Institutions</p>
                         </div>
+
                         <div>
-                            <div className="text-4xl font-bold text-cyan-400 mb-2">89,650+</div>
-                            <p className="text-gray-300">Verifications Completed</p>
+                            <div className="flex items-center justify-center gap-3 text-4xl font-bold text-cyan-100 drop-shadow-md mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-cyan-200" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
+                                <span>89,650+</span>
+                            </div>
+                            <p className="text-cyan-200/80">Verifications Completed</p>
                         </div>
+
                         <div>
-                            <div className="text-4xl font-bold text-green-400 mb-2">99.9%</div>
-                            <p className="text-gray-300">Uptime Guarantee</p>
+                            <div className="flex items-center justify-center gap-3 text-4xl font-bold text-teal-100 drop-shadow-md mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-teal-200" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
+                                <span>99.9%</span>
+                            </div>
+                            <p className="text-teal-200/80">Uptime Guarantee</p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* CTA Section */}
+            {/* CTA Section (winter vibe — matched to Stats container design) */}
             <section className="container mx-auto px-6 pb-20">
-                <div className="text-center bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12">
-                    <h2 className="text-4xl font-bold text-white mb-4">Ready to Get Started?</h2>
-                    <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-                        Join the future of credential verification. Secure, fast, and globally recognized.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link to="/register" className="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold hover:bg-gray-100 transition-colors">
-                            Start Free Trial
-                        </Link>
-                        <Link to="/contact" className="border border-white text-white px-8 py-4 rounded-lg font-bold hover:bg-white/10 transition-colors">
-                            Contact Sales
-                        </Link>
+                <div className="relative rounded-2xl p-8 bg-gradient-to-r from-sky-900/10 via-indigo-900/8 to-slate-900/8 backdrop-blur-md border border-sky-200/8 overflow-hidden text-center">
+                    {/* subtle frosted radial sheen */}
+                    <div className="absolute -top-16 -left-16 w-72 h-72 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.04),transparent)] pointer-events-none rounded-2xl" />
+                    <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[radial-gradient(ellipse_at_bottom_right,rgba(200,230,255,0.02),transparent)] pointer-events-none rounded-2xl" />
+
+                    <div className="relative z-10 max-w-3xl mx-auto py-6">
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-sky-300/30 to-indigo-300/30 mb-6 shadow-[0_12px_40px_rgba(99,102,241,0.06)]">
+                            <i className="bx bx-snowflake text-3xl text-white/90"></i>
+                        </div>
+                        <h2 className="text-4xl font-extrabold text-sky-100 mb-4">Ready to Get Started?</h2>
+                        <p className="text-lg text-sky-200/80 mb-8 max-w-2xl mx-auto">
+                            Join the season of secure, instant and globally recognized credentials — protected by blockchain.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <Link
+                                to="/register"
+                                className="inline-flex items-center justify-center bg-gradient-to-r from-sky-300 to-indigo-300 text-sky-900 px-8 py-4 rounded-lg font-bold hover:scale-105 transform transition shadow-sm"
+                            >
+                                <i className="bx bx-rocket mr-3"></i>
+                                Start Free Trial
+                            </Link>
+
+                            <Link
+                                to="/contact"
+                                className="inline-flex items-center justify-center border border-sky-200/30 text-sky-200 px-8 py-4 rounded-lg font-bold bg-white/6 hover:bg-white/12 transition"
+                            >
+                                Contact Sales
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </section>

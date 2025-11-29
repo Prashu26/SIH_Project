@@ -66,7 +66,7 @@ const Hero = () => {
                         {/* Main Heading */}
                         <div className="space-y-4">
                             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight">
-                                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                                <span className="text-white">
                                     Secure
                                 </span>
                                 <br />
@@ -84,7 +84,7 @@ const Hero = () => {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                             <Link 
                                 to="/register"
-                                className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 flex items-center justify-center gap-3"
+                                className="group bg-gradient-to-r from-[#CFCFCF]-600 to-purple-600 hover:from-yellow-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-yellow-500/25 hover:shadow-yellow-500/40 hover:scale-105 flex items-center justify-center gap-3"
                             >
                                 <span>Get Started</span>
                                 <i className="bx bx-rocket group-hover:translate-x-1 transition-transform"></i>
@@ -121,7 +121,7 @@ const Hero = () => {
                         <div className="relative h-96 lg:h-[900px]">
                             <Spline 
                                 className="absolute inset-0 w-full h-full"
-                                scene="https://prod.spline.design/5zwZsiILV3BBuf3I/scene.splinecode"
+                                scene="https://prod.spline.design/X2P2Rc3tC6yDbbYl/scene.splinecode"
                                 onError={() => console.log('Spline failed to load, showing features instead')}
                             />
                             

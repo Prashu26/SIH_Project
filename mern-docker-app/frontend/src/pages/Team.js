@@ -2,16 +2,16 @@ import React from "react";
 
 const teamMembers = [
   {
-    name: "NEIL KEVIN MARTIS",
-    img: "/adithya.jpeg",
+    name: "Adithya Kashyap M S",
+    img: "/adithyadp.png",
   },
   {
-    name: "SHESHA VISHNU PRASAD",
-    img: "/adithya.jpeg",
+    name: "Prashanth H M",
+    img: "/prashanth.jpeg",
   },
   {
     name: "NEELU KHATRI",
-    img: "/adithya.jpeg",
+    img: "/neelu.png",
   },
 ];
 

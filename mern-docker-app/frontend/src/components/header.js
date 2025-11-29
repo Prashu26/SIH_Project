@@ -36,7 +36,6 @@ const Header = () => {
     { path: '/verify', label: 'Verify', icon: 'bx-shield-check' },
     { path: '/features', label: 'Features', icon: 'bx-star' },
     { path: '/about', label: 'About', icon: 'bx-info-circle' },
-    { path: '/contact', label: 'Contact', icon: 'bx-phone' },
     { path: '/team', label: 'Team', icon: 'bx-group' }
   ];
 
@@ -54,12 +53,22 @@ const Header = () => {
       <div className="container mx-auto flex justify-between items-center py-4 px-4 lg:px-8">
         {/* Logo */}
         <Link to="/" className="flex items-center group">
-          <div className="bg-gradient-to-r from-blue-400 to-purple-500 p-2 rounded-lg mr-3 group-hover:scale-105 transition-transform">
-            <i className="bx bx-certificate text-white text-xl"></i>
+          <div className="p-2 rounded-lg mr-3 transform transition-transform duration-300 group-hover:scale-105"
+               style={{ background: 'linear-gradient(90deg,#FFD166,#FF6B6B,#FF9A8B)' }}>
+            <i className="bx bx-certificate text-white text-xl drop-shadow-sm"></i>
           </div>
-          <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            Skill Credentialing
-          </h1>
+
+          {/* Aesthetic title: bold, tracked, subtle glow and hover scale */}
+          <div className="flex flex-col">
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-wide uppercase bg-clip-text text-transparent
+                           bg-gradient-to-r text-white
+                           drop-shadow-[0_6px_22px_rgba(255,140,95,0.12)] transition-transform duration-300 transform-gpu group-hover:scale-105">
+              Skill Credentialing
+            </h1>
+
+            {/* small subtitle/accent line to enhance aesthetic */}
+            <div className="mt-1 h-1 w-24 rounded-full bg-gradient-to-r from-amber-300 via-pink-300 to-rose-400 opacity-80 blur-sm" />
+          </div>
         </Link>
 
         {/* Desktop Navigation */}

@@ -1,5 +1,6 @@
 import React from 'react';
 import 'boxicons/css/boxicons.min.css';
+import Spline from '@splinetool/react-spline';
 
 const About = () => {
     const features = [
@@ -25,6 +26,24 @@ const About = () => {
         }
     ];
 
+    // summer vibe gradients for icon backgrounds (cycled)
+    const summerGradients = [
+      'from-yellow-400/90 to-pink-400/90',
+      'from-emerald-300/90 to-yellow-300/90',
+      'from-cyan-300/90 to-rose-400/90',
+      'from-orange-400/90 to-amber-300/90'
+    ];
+    
+    // Why-block list items (mapped so we can color the check badges)
+    const whyItems = [
+      'Immutable records that cannot be altered or deleted',
+      'Decentralized verification without third-party dependencies',
+      'Global accessibility and transparency',
+      'Cost-effective and efficient verification process'
+    ];
+    
+    const checkBgColors = ['bg-yellow-400', 'bg-emerald-300', 'bg-cyan-300', 'bg-orange-400'];
+
     const team = [
         {
             name: 'Dr. Sarah Johnson',
@@ -48,7 +67,15 @@ const About = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black">
-            <div className="container mx-auto px-6 py-20">
+            {/* Full-viewport Spline background (interactive) */}
+            <div aria-hidden className="fixed inset-0 z-0">
+                <Spline
+                    scene="https://prod.spline.design/S82vCD0u7Y-1ZAF0/scene.splinecode"
+                    className="absolute inset-0 w-full h-full pointer-events-auto"
+                    onError={() => {/* spline failed to load */}}
+                />
+            </div>
+            <div className="container mx-auto px-6 py-20 relative z-10">
                 {/* Hero Section */}
                 <div className="text-center mb-16">
                     <h1 className="text-5xl font-bold mb-6">
@@ -76,25 +103,17 @@ const About = () => {
                             regardless of where they learned them or how they acquired them.
                         </p>
                     </div>
-                    <div className="bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-8">
+                    <div className="bg-gray-800/8 backdrop-blur-md border border-gray-700/8 rounded-2xl p-8">
                         <h3 className="text-2xl font-bold text-white mb-4">Why Blockchain?</h3>
                         <ul className="space-y-4 text-gray-300">
-                            <li className="flex items-start gap-3">
-                                <i className="bx bx-check-circle text-green-400 mt-1"></i>
-                                <span>Immutable records that cannot be altered or deleted</span>
+                          {whyItems.map((text, i) => (
+                            <li key={i} className="flex items-start gap-3">
+                              <span className={`w-8 h-8 rounded-full flex items-center justify-center ${checkBgColors[i % checkBgColors.length]} text-white mt-1`}>
+                                <i className="bx bx-check"></i>
+                              </span>
+                              <span>{text}</span>
                             </li>
-                            <li className="flex items-start gap-3">
-                                <i className="bx bx-check-circle text-green-400 mt-1"></i>
-                                <span>Decentralized verification without third-party dependencies</span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <i className="bx bx-check-circle text-green-400 mt-1"></i>
-                                <span>Global accessibility and transparency</span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <i className="bx bx-check-circle text-green-400 mt-1"></i>
-                                <span>Cost-effective and efficient verification process</span>
-                            </li>
+                          ))}
                         </ul>
                     </div>
                 </div>
@@ -104,8 +123,11 @@ const About = () => {
                     <h2 className="text-3xl font-bold text-center text-white mb-12">Platform Features</h2>
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {features.map((feature, index) => (
-                            <div key={index} className="bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-6 text-center hover:border-blue-500/50 transition-all duration-300">
-                                <div className="bg-gradient-to-r from-blue-500 to-purple-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <div
+                                key={index}
+                                className="bg-gray-800/8 backdrop-blur-md border border-gray-700/8 rounded-2xl p-6 text-center hover:border-blue-500/20 transition-all duration-300"
+                            >
+                                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-gradient-to-r ${summerGradients[index % summerGradients.length]}`}>
                                     <i className={`bx ${feature.icon} text-2xl text-white`}></i>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
@@ -115,25 +137,8 @@ const About = () => {
                     </div>
                 </div>
 
-                {/* Team Section */}
-                <div className="mb-20">
-                    <h2 className="text-3xl font-bold text-center text-white mb-12">Meet Our Team</h2>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {team.map((member, index) => (
-                            <div key={index} className="bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-6 text-center">
-                                <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                                    <i className="bx bx-user text-3xl text-white"></i>
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">{member.name}</h3>
-                                <p className="text-blue-400 mb-3">{member.role}</p>
-                                <p className="text-gray-300 text-sm">{member.description}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
                 {/* Statistics */}
-                <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-md border border-blue-500/30 rounded-2xl p-8">
+                <div className="bg-gray-800/6 backdrop-blur-md border border-gray-700/8 rounded-2xl p-8">
                     <h2 className="text-3xl font-bold text-center text-white mb-8">Platform Statistics</h2>
                     <div className="grid md:grid-cols-4 gap-8 text-center">
                         <div>

@@ -42,7 +42,7 @@ function Layout() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-900 via-red-900 to-black">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-beige-900 via-beige-700 to-white">
       {/* Background elements */}
       <div className="fixed inset-0 opacity-10 pointer-events-none"></div>
       <div className="fixed top-[20%] right-[-5%] h-0 w-[40rem] shadow-[0_0_50px_#4cc9f0] -rotate-[30deg] opacity-30"></div>
@@ -114,9 +114,13 @@ function Layout() {
   );
 }
 
+const SCENE_URL = 'https://prod.spline.design/S82vCD0u7Y-1ZAF0/scene.splinecode';
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [SplineComp, setSplineComp] = useState(null);
+  const [splineFailed, setSplineFailed] = useState(false);
 
   // Check for existing session on app load
   useEffect(() => {
@@ -147,6 +151,21 @@ export default function App() {
     setUser(null);
   };
 
+  useEffect(() => {
+    let mounted = true;
+    // dynamic import avoids dev server chunk-loading issues
+    import('@splinetool/react-spline')
+      .then((mod) => {
+        if (mounted && mod && mod.default) setSplineComp(() => mod.default);
+      })
+      .catch(() => {
+        if (mounted) setSplineFailed(true);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex items-center justify-center">
@@ -161,7 +180,30 @@ export default function App() {
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
       <BrowserRouter>
-        <Layout />
+        <div className="relative min-h-screen">
+          {/* Full-viewport spline background (interactive when possible) */}
+          <div aria-hidden className="fixed inset-0 -z-10">
+            {SplineComp && !splineFailed ? (
+              <SplineComp
+                scene={SCENE_URL}
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                onError={() => setSplineFailed(true)}
+              />
+            ) : (
+              <iframe
+                title="spline-background"
+                src={SCENE_URL}
+                className="absolute inset-0 w-full h-full pointer-events-none border-0"
+                sandbox="allow-scripts allow-same-origin allow-popups"
+              />
+            )}
+          </div>
+
+          {/* Your app content goes here */}
+          <div className="relative z-10">
+            <Layout />
+          </div>
+        </div>
       </BrowserRouter>
     </AuthContext.Provider>
   );
