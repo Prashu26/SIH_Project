@@ -1,0 +1,6 @@
+learnerEmail,studentUniqueCode,courseName,courseCode,skills,validUntil
+emma.learner@example.com,EMMA-003,Full Stack Development,C1001,"HTML,CSS",2026-06-30
+liam.learner@example.com,LIAM-004,Machine Learning Foundations,C1002,"Python,Model Tuning",2026-07-15
+sophia.learner@example.com,SOPH-005,Cloud Computing Specialist,C1003,"AWS,Virtualization",2026-08-10
+noah.learner@example.com,NOAH-006,Cybersecurity Operations,C1004,"Network Security,Threat Hunting",2026-09-05
+ava.learner@example.com,AVA-007,UI/UX Design Essentials,C1005,"Wireframing,Prototyping",2026-10-01

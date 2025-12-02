@@ -1,0 +1,28 @@
+# Dependency directories
+/node_modules/
+/mern-docker-app/node_modules/
+/mern-docker-app/backend/node_modules/
+/mern-docker-app/frontend/node_modules/
+/mern-docker-app/backend/blockchain/node_modules/
+/mern-docker-app/backend/blockchain/package-lock.json
+
+# Hardhat build artifacts
+/mern-docker-app/backend/blockchain/artifacts/
+/mern-docker-app/backend/blockchain/cache/
+
+# Environment & secrets
+*.env
+*.env.*
+/mern-docker-app/backend/.env
+/mern-docker-app/frontend/.env
+
+# Logs & runtime output
+*.log
+/mern-docker-app/backend/logs/
+
+# Generated uploads & temp files
+/mern-docker-app/backend/uploads/
+
+# System files
+.DS_Store
+Thumbs.db

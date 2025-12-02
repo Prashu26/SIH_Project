@@ -3,6 +3,9 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const { Types } = require('mongoose');
 const Certificate = require('../models/Certificate');
 const Course = require('../models/Course');
 const User = require('../models/User');
@@ -43,6 +46,133 @@ const upload = multer({
     cb(new Error('Only PDF, CSV, and JSON files are allowed'));
   }
 });
+
+async function generateUniqueLearnerId(preferredId) {
+  const base = (preferredId && preferredId.trim()) || `LRN-${Date.now()}`;
+  let counter = 0;
+
+  while (counter < 1000) {
+    const candidate = counter === 0 ? base : `${base}-${counter}`;
+    const existing = await User.findOne({
+      role: 'learner',
+      'learnerProfile.learnerId': candidate
+    });
+
+    if (!existing) {
+      return candidate;
+    }
+
+    counter += 1;
+  }
+
+  return `${base}-${Date.now()}`;
+}
+
+function generateTemporaryPassword() {
+  return crypto
+    .randomBytes(9)
+    .toString('base64')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .slice(0, 12) || 'TempPass123';
+}
+
+async function ensureLearnerAccount({ email, learnerIdCandidate, displayName }) {
+  const normalizedEmail = email.toLowerCase().trim();
+  const trimmedCandidate = learnerIdCandidate ? learnerIdCandidate.trim() : null;
+
+  let learner = await User.findOne({ email: normalizedEmail, role: 'learner' });
+  if (!learner && trimmedCandidate) {
+    learner = await User.findOne({
+      role: 'learner',
+      'learnerProfile.learnerId': trimmedCandidate
+    });
+  }
+
+  let created = false;
+  let temporaryPassword = null;
+
+  if (!learner) {
+    const learnerId = await generateUniqueLearnerId(trimmedCandidate);
+    temporaryPassword = generateTemporaryPassword();
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+    learner = new User({
+      name: (displayName && displayName.trim()) || normalizedEmail.split('@')[0] || 'Learner',
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: 'learner',
+      learnerProfile: {
+        learnerId,
+        courses: []
+      }
+    });
+
+    await learner.save();
+    created = true;
+  } else {
+    let needsSave = false;
+
+    if (!learner.learnerProfile) {
+      learner.learnerProfile = {};
+      needsSave = true;
+    }
+
+    if (trimmedCandidate && learner.learnerProfile.learnerId !== trimmedCandidate) {
+      const clash = await User.findOne({
+        _id: { $ne: learner._id },
+        role: 'learner',
+        'learnerProfile.learnerId': trimmedCandidate
+      });
+
+      if (!clash) {
+        learner.learnerProfile.learnerId = trimmedCandidate;
+        needsSave = true;
+      }
+    }
+
+    if (!learner.learnerProfile.learnerId) {
+      learner.learnerProfile.learnerId = await generateUniqueLearnerId(trimmedCandidate);
+      needsSave = true;
+    }
+
+    if (!learner.learnerProfile.courses) {
+      learner.learnerProfile.courses = [];
+      needsSave = true;
+    }
+
+    if (needsSave) {
+      await learner.save();
+    }
+  }
+
+  return {
+    learner,
+    created,
+    learnerId: learner.learnerProfile?.learnerId,
+    temporaryPassword
+  };
+}
+
+async function ensureLearnerHasCourse(learnerDoc, courseId) {
+  if (!learnerDoc) return;
+
+  const courseIdString = courseId.toString();
+  learnerDoc.learnerProfile = learnerDoc.learnerProfile || { courses: [] };
+  learnerDoc.learnerProfile.courses = learnerDoc.learnerProfile.courses || [];
+
+  const alreadyLinked = learnerDoc.learnerProfile.courses.some((existingId) => {
+    try {
+      return existingId.toString() === courseIdString;
+    } catch (_err) {
+      return String(existingId) === courseIdString;
+    }
+  });
+
+  if (!alreadyLinked) {
+    learnerDoc.learnerProfile.courses.push(courseId);
+    await learnerDoc.save();
+  }
+}
 
 // ============================================
 // ISSUER DASHBOARD - Overview & Statistics
@@ -200,12 +330,10 @@ router.post('/certificates', auth(['institute', 'institution']), upload.single('
       return res.status(400).json({ message: 'Learner email and course information are required' });
     }
     
-    // Find or create learner
-    let learner = await User.findOne({ email: learnerEmail.toLowerCase().trim() });
-    if (!learner) {
-      return res.status(404).json({ message: 'Learner not found. Please register the learner first.' });
-    }
-    
+    const normalizedEmail = learnerEmail.toLowerCase().trim();
+    const modulesList = skillsAcquired ? skillsAcquired.split(',').map((s) => s.trim()).filter(Boolean) : [];
+    const providedUniqueCode = (learnerId || req.body.studentUniqueCode || '').trim();
+
     // Find or create course
     let course;
     if (courseId) {
@@ -215,22 +343,30 @@ router.post('/certificates', auth(['institute', 'institution']), upload.single('
         title: new RegExp(`^${courseName}$`, 'i'),
         institute: req.user.id
       });
-      
+
       if (!course) {
         course = new Course({
           title: courseName,
           description: `Certificate course for ${courseName}`,
           institute: req.user.id,
-          modules: skillsAcquired ? skillsAcquired.split(',').map(s => s.trim()) : []
+          modules: modulesList.length > 0 ? modulesList : ['Core Module']
         });
         await course.save();
       }
     }
-    
+
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-    
+
+    const { learner, created: learnerCreated, learnerId: finalLearnerId, temporaryPassword } = await ensureLearnerAccount({
+      email: normalizedEmail,
+      learnerIdCandidate: providedUniqueCode,
+      displayName: req.body.learnerName
+    });
+
+    await ensureLearnerHasCourse(learner, course._id);
+
     // Check for existing certificate
     const existingCert = await Certificate.findOne({
       learner: learner._id,
@@ -238,31 +374,42 @@ router.post('/certificates', auth(['institute', 'institution']), upload.single('
       institute: req.user.id,
       status: { $nin: ['Revoked', 'REVOKED'] }
     });
-    
+
     if (existingCert) {
       return res.status(400).json({ message: 'Certificate already exists for this learner and course' });
     }
-    
-    // Generate certificate using service
-    const certificateData = {
-      learnerEmail: learner.email,
-      learnerId: learnerId || learner.learnerProfile?.learnerId,
+
+    const certificateId = `CERT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    const { certificate } = await certificateService.issueCertificate({
+      certificateId,
+      studentUniqueCode: finalLearnerId,
+      learner: learner._id,
+      learnerName: learner.name,
+      institute: req.user.id,
+      instituteName: req.user?.name,
+      course: course._id,
       courseName: course.title,
-      courseId: course._id,
-      skillsAcquired: skillsAcquired ? skillsAcquired.split(',').map(s => s.trim()) : [],
+      modulesAwarded: modulesList,
       validUntil: validUntil || null,
       ncvqLevel: ncvqLevel || null,
       ncvqQualificationCode: ncvqQualificationCode || null,
-      instituteId: req.user.id,
-      certificateFile: req.file ? req.file.path : null
-    };
-    
-    const certificate = await certificateService.issueSingleCertificate(certificateData);
-    
+      ncvqQualificationTitle: null,
+      ncvqQualificationType: null,
+      status: 'Issued'
+    });
+
     res.status(201).json({
       success: true,
       message: 'Certificate issued successfully',
-      certificate
+      certificate,
+      newLearner: learnerCreated
+        ? {
+            email: learner.email,
+            learnerId: finalLearnerId,
+            temporaryPassword
+          }
+        : undefined
     });
   } catch (error) {
     console.error('Issue certificate error:', error);
@@ -305,52 +452,105 @@ router.post('/certificates/batch', auth(['institute', 'institution']), upload.si
     
     // Process batch - resolve learner IDs and course IDs
     const certificates = [];
+    const failedRecords = [];
+    const newLearnerCredentials = [];
+    const recordedLearnerEmails = new Set();
     for (const record of records) {
+      const rawCourseIdValue = (record.courseId || record.courseCode || '').toString().trim();
       try {
         const learnerEmail = (record.learnerEmail || record.email || '').toLowerCase().trim();
         const studentUniqueCode = (record.studentUniqueCode || record.learnerId || '').trim();
         const courseName = (record.courseName || record.course || '').trim();
-        const courseId = record.courseId;
         
-        if (!learnerEmail || !studentUniqueCode || (!courseName && !courseId)) {
-          console.error('Skipping record - missing required fields:', { learnerEmail, studentUniqueCode, courseName, courseId });
+        if (!learnerEmail || !studentUniqueCode || (!courseName && !rawCourseIdValue)) {
+          console.error('Skipping record - missing required fields:', { learnerEmail, studentUniqueCode, courseName, rawCourseId: rawCourseIdValue });
+          failedRecords.push({
+            learnerEmail,
+            studentUniqueCode,
+            courseName,
+            courseId: rawCourseIdValue,
+            reason: 'Missing learnerEmail, studentUniqueCode, or course information'
+          });
           continue;
         }
-        
-        // Find learner by email
-        const learner = await User.findOne({ email: learnerEmail, role: 'learner' });
-        if (!learner) {
-          console.error(`Learner not found: ${learnerEmail}`);
-          continue;
-        }
-        
         // Find course by ID or name
         let course;
-        if (courseId) {
-          course = await Course.findById(courseId);
+        if (rawCourseIdValue) {
+          if (Types.ObjectId.isValid(rawCourseIdValue)) {
+            course = await Course.findOne({ _id: rawCourseIdValue, institute: req.user.id });
+          }
+
+          if (!course) {
+            course = await Course.findOne({
+              institute: req.user.id,
+              $or: [
+                { courseCode: rawCourseIdValue },
+                { title: new RegExp(`^${rawCourseIdValue}$`, 'i') }
+              ]
+            });
+          }
         } else {
-          course = await Course.findOne({ title: courseName, institute: req.user.id });
+          course = await Course.findOne({ title: new RegExp(`^${courseName}$`, 'i'), institute: req.user.id });
         }
         
         if (!course) {
-          console.error(`Course not found: ${courseName || courseId}`);
+          console.error(`Course not found: ${courseName || rawCourseIdValue}`);
+          failedRecords.push({
+            learnerEmail,
+            studentUniqueCode,
+            courseName,
+            courseId: rawCourseIdValue,
+            reason: `Course not found for ${courseName || rawCourseIdValue}`
+          });
           continue;
         }
         
+        const { learner, created: learnerCreated, learnerId: finalLearnerId, temporaryPassword } = await ensureLearnerAccount({
+          email: learnerEmail,
+          learnerIdCandidate: studentUniqueCode,
+          displayName: record.learnerName || record.name
+        });
+
+        await ensureLearnerHasCourse(learner, course._id);
+
+        if (learnerCreated && !recordedLearnerEmails.has(learner.email)) {
+          recordedLearnerEmails.add(learner.email);
+          newLearnerCredentials.push({
+            email: learner.email,
+            learnerId: finalLearnerId,
+            temporaryPassword
+          });
+        }
+
+        const uniqueCodeForCertificate = finalLearnerId || studentUniqueCode;
+
         certificates.push({
           learner: learner._id,
+          learnerName: learner.name,
           course: course._id,
-          studentUniqueCode,
+          courseName: course.title,
+          studentUniqueCode: uniqueCodeForCertificate,
           validUntil: record.validUntil || null,
           modulesAwarded: (record.skills || record.skillsAcquired || '').split(',').map(s => s.trim()).filter(Boolean)
         });
       } catch (error) {
         console.error('Error processing record:', error);
+        failedRecords.push({
+          learnerEmail: record.learnerEmail || record.email,
+          studentUniqueCode: record.studentUniqueCode || record.learnerId,
+          courseName: record.courseName || record.course,
+          courseId: rawCourseIdValue,
+          reason: error.message || 'Unexpected error while processing record'
+        });
       }
     }
     
     if (certificates.length === 0) {
-      return res.status(400).json({ message: 'No valid records to process' });
+      return res.status(400).json({
+        message: 'No valid records to process',
+        errors: failedRecords,
+        newLearners: newLearnerCredentials
+      });
     }
     
     const result = await certificateService.issueBatchCertificates({
@@ -366,8 +566,10 @@ router.post('/certificates/batch', auth(['institute', 'institution']), upload.si
       message: `Batch processed: ${result.successful.length} successful, ${result.failed.length} failed`,
       batchId: result.batchId,
       results: result.successful,
-      errors: result.failed,
-      merkleRoot: result.merkleRoot
+      errors: result.failed.length ? result.failed : failedRecords,
+      newLearners: newLearnerCredentials,
+      merkleRoot: result.merkleRoot,
+      blockchain: result.blockchainAnchoring || null
     });
   } catch (error) {
     console.error('Batch issue error:', error);
@@ -579,33 +781,54 @@ router.get('/courses', auth(['institute', 'institution']), async (req, res) => {
  */
 router.post('/courses', auth(['institute', 'institution']), async (req, res) => {
   try {
-    const { title, description, modules, duration, ncvqLevel } = req.body;
-    
+    const { title, description, modules, duration, ncvqLevel, courseCode } = req.body;
+
     if (!title) {
       return res.status(400).json({ message: 'Course title is required' });
     }
-    
-    // Check for existing course
+
+    const normalizedTitle = title.trim();
+    const normalizedCode = courseCode ? courseCode.trim() : null;
+    const moduleList = Array.isArray(modules)
+      ? modules.filter(Boolean)
+      : String(modules || '')
+          .split(',')
+          .map((m) => m.trim())
+          .filter(Boolean);
+
+    if (moduleList.length === 0) {
+      return res.status(400).json({ message: 'Provide at least one module for the course' });
+    }
+
     const existing = await Course.findOne({
-      title: new RegExp(`^${title}$`, 'i'),
-      institute: req.user.id
+      institute: req.user.id,
+      title: new RegExp(`^${normalizedTitle}$`, 'i')
     });
-    
+
     if (existing) {
       return res.status(400).json({ message: 'Course with this title already exists' });
     }
-    
+
+    if (normalizedCode) {
+      const codeCollision = await Course.findOne({ institute: req.user.id, courseCode: normalizedCode });
+      if (codeCollision) {
+        return res.status(400).json({ message: 'Course code already in use for this institute' });
+      }
+    }
+
     const course = new Course({
-      title,
+      title: normalizedTitle,
+      courseCode: normalizedCode,
       description: description || '',
-      modules: modules || [],
-      duration: duration || null,
+      modules: moduleList,
+      duration: duration ? Number(duration) : null,
       ncvqLevel: ncvqLevel || null,
-      institute: req.user.id
+      institute: req.user.id,
+      createdBy: req.user.id
     });
-    
+
     await course.save();
-    
+
     res.status(201).json({
       success: true,
       message: 'Course created successfully',
@@ -623,25 +846,68 @@ router.post('/courses', auth(['institute', 'institution']), async (req, res) => 
  */
 router.put('/courses/:id', auth(['institute', 'institution']), async (req, res) => {
   try {
-    const { title, description, modules, duration, ncvqLevel } = req.body;
-    
+    const { title, description, modules, duration, ncvqLevel, courseCode } = req.body;
+
     const course = await Course.findOne({
       _id: req.params.id,
       institute: req.user.id
     });
-    
+
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-    
-    if (title) course.title = title;
+
+    if (title) {
+      const normalized = title.trim();
+      const titleClash = await Course.findOne({
+        _id: { $ne: course._id },
+        institute: req.user.id,
+        title: new RegExp(`^${normalized}$`, 'i')
+      });
+      if (titleClash) {
+        return res.status(400).json({ message: 'Another course with this title already exists' });
+      }
+      course.title = normalized;
+    }
+
+    if (courseCode !== undefined) {
+      const normalizedCode = courseCode ? courseCode.trim() : null;
+      if (normalizedCode) {
+        const codeClash = await Course.findOne({
+          _id: { $ne: course._id },
+          institute: req.user.id,
+          courseCode: normalizedCode
+        });
+        if (codeClash) {
+          return res.status(400).json({ message: 'Another course already uses this code' });
+        }
+      }
+      course.courseCode = normalizedCode;
+    }
+
     if (description !== undefined) course.description = description;
-    if (modules) course.modules = modules;
-    if (duration !== undefined) course.duration = duration;
+
+    if (modules !== undefined) {
+      const moduleList = Array.isArray(modules)
+        ? modules.filter(Boolean)
+        : String(modules || '')
+            .split(',')
+            .map((m) => m.trim())
+            .filter(Boolean);
+      if (moduleList.length === 0) {
+        return res.status(400).json({ message: 'Provide at least one module for the course' });
+      }
+      course.modules = moduleList;
+    }
+
+    if (duration !== undefined) {
+      course.duration = duration === null || duration === '' ? null : Number(duration);
+    }
+
     if (ncvqLevel !== undefined) course.ncvqLevel = ncvqLevel;
-    
+
     await course.save();
-    
+
     res.json({
       success: true,
       message: 'Course updated successfully',

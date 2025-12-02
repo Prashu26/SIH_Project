@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const CourseSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
+    courseCode: { type: String, trim: true },
+    description: { type: String, trim: true },
     platform: { type: String, trim: true },
     modules: {
       type: [String],
@@ -12,11 +14,16 @@ const CourseSchema = new mongoose.Schema(
       },
       required: true,
     },
-    description: { type: String, trim: true },
+    duration: { type: Number, default: null },
+    ncvqLevel: { type: String, trim: true },
+    institute: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     assignedInstitutes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }
 );
+
+CourseSchema.index({ institute: 1, title: 1 }, { unique: true });
+CourseSchema.index({ institute: 1, courseCode: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Course', CourseSchema);

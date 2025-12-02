@@ -1,7 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { apiFetch } from '../services/api';
+import API_BASE, { apiFetch } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import 'boxicons/css/boxicons.min.css';
+
+const CHAIN_LABELS = {
+  '0x1': 'Ethereum Mainnet',
+  '0x5': 'Goerli Testnet',
+  '0xaa36a7': 'Sepolia Testnet',
+  '0x89': 'Polygon Mainnet',
+  '0x13881': 'Polygon Mumbai Testnet'
+};
 
 function useAuth() {
   const token = localStorage.getItem('token');
@@ -55,7 +63,16 @@ export default function IssuerDashboard() {
   const [batchFile, setBatchFile] = useState(null);
   const [certFile, setCertFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [metamaskAccount, setMetamaskAccount] = useState(null);
+  const [chainId, setChainId] = useState(null);
+  const [hashToAnchor, setHashToAnchor] = useState('');
+  const [contractAddress, setContractAddress] = useState(() => process.env.REACT_APP_CONTRACT_ADDRESS || '');
+  const [anchorStatus, setAnchorStatus] = useState({ type: '', message: '' });
+  const [isAnchoring, setIsAnchoring] = useState(false);
   
+  const displayChainName = chainId ? `${CHAIN_LABELS[chainId] || 'Unknown Network'} (${chainId})` : 'Not connected';
+  const displayAccount = metamaskAccount ? `${metamaskAccount.slice(0, 6)}...${metamaskAccount.slice(-4)}` : 'Not connected';
+
   // Load dashboard data
   const loadDashboard = useCallback(async () => {
     if (!token) return;
@@ -160,6 +177,44 @@ export default function IssuerDashboard() {
       loadBatches();
     }
   }, [activeTab, token, loadCertificates, loadProofs, loadBatches]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.ethereum) {
+      return;
+    }
+
+    const ethereum = window.ethereum;
+
+    ethereum
+      .request({ method: 'eth_accounts' })
+      .then((accounts) => {
+        if (accounts && accounts.length > 0) {
+          setMetamaskAccount(accounts[0]);
+        }
+      })
+      .catch(() => {});
+
+    ethereum
+      .request({ method: 'eth_chainId' })
+      .then((id) => setChainId(id))
+      .catch(() => {});
+
+    const handleAccountsChanged = (accounts) => {
+      setMetamaskAccount(accounts && accounts.length > 0 ? accounts[0] : null);
+    };
+
+    const handleChainChanged = (id) => {
+      setChainId(id);
+    };
+
+    ethereum.on('accountsChanged', handleAccountsChanged);
+    ethereum.on('chainChanged', handleChainChanged);
+
+    return () => {
+      ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      ethereum.removeListener('chainChanged', handleChainChanged);
+    };
+  }, []);
   
   // Handle single certificate submission
   const handleSingleCertSubmit = async (e) => {
@@ -186,7 +241,14 @@ export default function IssuerDashboard() {
       });
       
       if (response.ok) {
-        setFeedback({ type: 'success', message: 'Certificate issued successfully!' });
+        const newLearner = response.data?.newLearner;
+        let successMessage = 'Certificate issued successfully!';
+
+        if (newLearner?.temporaryPassword) {
+          successMessage += ` Temporary account created for ${newLearner.email}. Temporary password: ${newLearner.temporaryPassword}`;
+        }
+
+        setFeedback({ type: 'success', message: successMessage });
         setSingleCertForm({
           learnerEmail: '',
           learnerId: '',
@@ -199,6 +261,7 @@ export default function IssuerDashboard() {
         });
         setCertFile(null);
         loadDashboard();
+        loadCertificates();
       } else {
         setFeedback({ type: 'error', message: response.data?.message || 'Failed to issue certificate' });
       }
@@ -232,19 +295,128 @@ export default function IssuerDashboard() {
       });
       
       if (response.ok) {
-        setFeedback({
-          type: 'success',
-          message: `Batch processed: ${response.data.results?.length || 0} certificates issued`
-        });
-        setBatchFile(null);
-        loadDashboard();
+          const issuedCount = response.data.results?.length || 0;
+          const newLearners = Array.isArray(response.data?.newLearners) ? response.data.newLearners : [];
+
+          let message = `Batch processed: ${issuedCount} certificates issued`;
+          if (newLearners.length > 0) {
+            const summary = newLearners
+              .map((learner) => `${learner.email} (temp password: ${learner.temporaryPassword})`)
+              .join('; ');
+            message += `. New learner accounts: ${summary}`;
+          }
+
+          setFeedback({ type: 'success', message });
+          setBatchFile(null);
+          loadDashboard();
+          loadCertificates();
       } else {
-        setFeedback({ type: 'error', message: response.data?.message || 'Batch upload failed' });
+        const errorDetail = response.data?.errors?.[0]?.reason;
+        const errorMessage = response.data?.message || 'Batch upload failed';
+        setFeedback({
+          type: 'error',
+          message: errorDetail ? `${errorMessage}: ${errorDetail}` : errorMessage
+        });
       }
     } catch (error) {
       setFeedback({ type: 'error', message: 'Network error. Please try again.' });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const connectMetamask = useCallback(async () => {
+    if (typeof window === 'undefined' || !window.ethereum) {
+      setAnchorStatus({ type: 'error', message: 'MetaMask not detected. Install the extension and try again.' });
+      return;
+    }
+
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const account = accounts && accounts.length > 0 ? accounts[0] : null;
+      setMetamaskAccount(account);
+
+      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      setChainId(currentChainId);
+      setAnchorStatus({ type: 'success', message: 'MetaMask connected successfully.' });
+    } catch (error) {
+      console.error('MetaMask connect error:', error);
+      setAnchorStatus({ type: 'error', message: error?.message || 'Failed to connect MetaMask.' });
+    }
+  }, []);
+
+  const handleAnchorSubmit = async (e) => {
+    e.preventDefault();
+
+    const trimmedHash = hashToAnchor.trim();
+    if (!trimmedHash) {
+      setAnchorStatus({ type: 'error', message: 'Enter a certificate or Merkle hash to anchor.' });
+      return;
+    }
+
+    if (typeof window === 'undefined' || !window.ethereum) {
+      setAnchorStatus({ type: 'error', message: 'MetaMask not detected. Install the extension and try again.' });
+      return;
+    }
+
+    let account = metamaskAccount;
+    try {
+      if (!account) {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        account = accounts && accounts.length > 0 ? accounts[0] : null;
+        setMetamaskAccount(account);
+      }
+    } catch (error) {
+      console.error('MetaMask account request error:', error);
+      setAnchorStatus({ type: 'error', message: error?.message || 'MetaMask account access denied.' });
+      return;
+    }
+
+    if (!account) {
+      setAnchorStatus({ type: 'error', message: 'No MetaMask account available. Please connect MetaMask.' });
+      return;
+    }
+
+    let normalizedHash = trimmedHash.startsWith('0x') ? trimmedHash : `0x${trimmedHash}`;
+    if (!/^0x[0-9a-fA-F]+$/.test(normalizedHash)) {
+      setAnchorStatus({ type: 'error', message: 'Hash must be hexadecimal (0-9, a-f).' });
+      return;
+    }
+
+    if ((normalizedHash.length - 2) % 2 !== 0) {
+      normalizedHash = `0x0${normalizedHash.slice(2)}`;
+    }
+
+    const targetInput = contractAddress.trim();
+    const targetAddress = targetInput || account;
+    if (!/^0x[a-fA-F0-9]{40}$/.test(targetAddress)) {
+      setAnchorStatus({ type: 'error', message: 'Target address must be a valid 0x-prefixed Ethereum address.' });
+      return;
+    }
+
+    const txParams = {
+      from: account,
+      to: targetAddress,
+      value: '0x0',
+      data: normalizedHash
+    };
+
+    setIsAnchoring(true);
+    setAnchorStatus({ type: '', message: '' });
+
+    try {
+      const txHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [txParams]
+      });
+
+      setAnchorStatus({ type: 'success', message: `Transaction submitted successfully: ${txHash}` });
+      setHashToAnchor('');
+    } catch (error) {
+      console.error('Anchor submission error:', error);
+      setAnchorStatus({ type: 'error', message: error?.message || 'Failed to submit transaction.' });
+    } finally {
+      setIsAnchoring(false);
     }
   };
   
@@ -335,26 +507,71 @@ export default function IssuerDashboard() {
   };
   
   // Download proof
-  const downloadProof = async (certId) => {
+  const downloadFromEndpoint = async (endpoint, filename, legacyPath) => {
     try {
-      const response = await fetch(`/api/institute/certificates/${certId}/proof`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (!response.ok) throw new Error('Download failed');
-      
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const primaryUrl = API_BASE ? `${API_BASE}${endpoint}` : endpoint;
+      const response = await fetch(primaryUrl, { headers });
+
+      if (!response.ok) {
+        throw new Error('Primary download failed');
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `proof-${certId}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      setFeedback({ type: 'error', message: 'Failed to download proof' });
+    } catch (primaryError) {
+      if (legacyPath) {
+        try {
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const fallbackUrl = API_BASE ? `${API_BASE}${legacyPath}` : legacyPath;
+          const fallbackResponse = await fetch(fallbackUrl, { headers });
+          if (!fallbackResponse.ok) {
+            throw new Error('Fallback download failed');
+          }
+
+          const blob = await fallbackResponse.blob();
+          const url = window.URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = filename;
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          window.URL.revokeObjectURL(url);
+          return;
+        } catch (fallbackError) {
+          console.error('Artifact fallback failed:', fallbackError);
+        }
+      }
+
+      console.error('Artifact download failed:', primaryError);
+      setFeedback({ type: 'error', message: 'Unable to download artifact. Please try again later.' });
     }
+  };
+
+  const downloadPdf = (cert) => {
+    const legacyPath = cert.pdfPath ? `/${cert.pdfPath.replace(/^\//, '')}` : null;
+    downloadFromEndpoint(`/api/certificates/${cert.certificateId}/download`, `${cert.certificateId}.pdf`, legacyPath);
+  };
+
+  const downloadMetadata = (cert) => {
+    downloadFromEndpoint(`/api/certificates/${cert.certificateId}/artifacts/metadata`, `${cert.certificateId}-metadata.json`);
+  };
+
+  const downloadProof = (cert) => {
+    const legacyPath = cert.proofPath ? `/${cert.proofPath.replace(/^\//, '')}` : null;
+    downloadFromEndpoint(`/api/certificates/${cert.certificateId}/artifacts/proof`, `${cert.certificateId}-proof.json`, legacyPath);
+  };
+
+  const downloadCanonical = (cert) => {
+    downloadFromEndpoint(`/api/certificates/${cert.certificateId}/canonical`, `${cert.certificateId}-canonical.json`);
   };
   
   if (!token || !user) {
@@ -471,6 +688,7 @@ export default function IssuerDashboard() {
               { id: 'certificates', label: 'Certificates', icon: 'bx-list-ul' },
               { id: 'proofs', label: 'Pending Proofs', icon: 'bx-time-five', badge: proofs.length },
               { id: 'courses', label: 'Courses', icon: 'bx-book' },
+              { id: 'blockchain', label: 'Blockchain Anchor', icon: 'bx-link-alt' },
               { id: 'batches', label: 'Batches', icon: 'bx-layer' }
             ].map(tab => (
               <button
@@ -677,9 +895,18 @@ export default function IssuerDashboard() {
                   <li><code>learnerEmail</code> - Email address of learner</li>
                   <li><code>studentUniqueCode</code> - Unique student identifier</li>
                   <li><code>courseName</code> - Name of the course</li>
+                  <li><code>courseCode</code> - Optional short code (e.g. C1001) if you prefer over the course name</li>
                   <li><code>skills</code> - Comma-separated skills (optional)</li>
                   <li><code>validUntil</code> - Expiry date in YYYY-MM-DD format (optional)</li>
                 </ul>
+                <a
+                  href="/certificate-batch-template.csv"
+                  className="inline-flex items-center gap-2 mt-4 text-sm text-blue-200 hover:text-white"
+                  download
+                >
+                  <i className="bx bx-download"></i>
+                  Download sample CSV
+                </a>
               </div>
               
               <form onSubmit={handleBatchSubmit} className="space-y-6">
@@ -731,51 +958,131 @@ export default function IssuerDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {certificates.map(cert => (
+                  {certificates.map((cert) => {
+                    const statusLabel = cert.status || 'Pending';
+                    const statusKey = statusLabel.toLowerCase();
+
+                    return (
                     <div key={cert._id} className="bg-gray-700/50 border border-gray-600 rounded-lg p-6">
-                      <div className="flex items-start justify-between mb-4">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
                         <div>
                           <h3 className="text-xl font-bold text-white mb-2">{cert.course?.title || 'N/A'}</h3>
-                          <p className="text-gray-400">
-                            Learner: {cert.learner?.name || 'N/A'} ({cert.learner?.email || 'N/A'})
+                          <p className="text-gray-300">
+                            <span className="text-gray-400">Learner:</span> {cert.learner?.name || 'N/A'} ({cert.learner?.email || 'N/A'})
                           </p>
-                          <p className="text-gray-400 text-sm">
-                            Certificate ID: {cert.certificateId}
+                          <p className="text-gray-300 text-sm">
+                            <span className="text-gray-400">Certificate ID:</span> {cert.certificateId}
                           </p>
-                          <p className="text-gray-400 text-sm">
-                            Issued: {new Date(cert.issueDate || cert.createdAt).toLocaleDateString()}
+                          <p className="text-gray-300 text-sm">
+                            <span className="text-gray-400">Issued:</span> {new Date(cert.issueDate || cert.createdAt).toLocaleDateString()}
                           </p>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          cert.status.toLowerCase() === 'issued' ? 'bg-green-600/20 text-green-300' :
-                          cert.status.toLowerCase() === 'revoked' ? 'bg-red-600/20 text-red-300' :
+                        <span className={`self-start px-3 py-1 rounded-full text-sm font-medium ${
+                          statusKey === 'issued' ? 'bg-green-600/20 text-green-300' :
+                          statusKey === 'revoked' ? 'bg-red-600/20 text-red-300' :
                           'bg-yellow-600/20 text-yellow-300'
                         }`}>
-                          {cert.status}
+                          {statusLabel}
                         </span>
                       </div>
-                      
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => downloadProof(cert._id)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
-                        >
-                          <i className="bx bx-download"></i>
-                          Download Proof
-                        </button>
-                        
-                        {cert.status.toLowerCase() !== 'revoked' && (
-                          <button
-                            onClick={() => revokeCertificate(cert._id)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
-                          >
-                            <i className="bx bx-x-circle"></i>
-                            Revoke
-                          </button>
+
+                      <div className="grid md:grid-cols-2 gap-3 text-sm text-gray-300 mb-4">
+                        {(cert.studentUniqueCode || cert.uniqueId) && (
+                          <p>
+                            <span className="text-gray-400">Learner ID:</span> {cert.studentUniqueCode || cert.uniqueId}
+                          </p>
+                        )}
+                        {Array.isArray(cert.modulesAwarded) && cert.modulesAwarded.length > 0 && (
+                          <p>
+                            <span className="text-gray-400">Modules:</span> {cert.modulesAwarded.join(', ')}
+                          </p>
+                        )}
+                        {cert.metadataHash && (
+                          <p className="font-mono text-xs break-all">
+                            <span className="text-gray-400 normal-case font-sans">Metadata Hash:</span> {cert.metadataHash}
+                          </p>
+                        )}
+                        {cert.artifactHash && (
+                          <p className="font-mono text-xs break-all">
+                            <span className="text-gray-400 normal-case font-sans">PDF Hash:</span> {cert.artifactHash}
+                          </p>
+                        )}
+                        {cert.storage?.canonical?.hash && (
+                          <p className="font-mono text-xs break-all">
+                            <span className="text-gray-400 normal-case font-sans">Canonical Hash:</span> {cert.storage.canonical.hash}
+                          </p>
+                        )}
+                        {cert.merkleRoot && (
+                          <p className="font-mono text-xs break-all">
+                            <span className="text-gray-400 normal-case font-sans">Merkle Root:</span> {cert.merkleRoot}
+                          </p>
+                        )}
+                        {cert.batchId && (
+                          <p>
+                            <span className="text-gray-400">Batch ID:</span> {cert.batchId}
+                          </p>
+                        )}
+                        {cert.blockchainTxHash && (
+                          <p className="font-mono text-xs break-all">
+                            <span className="text-gray-400 normal-case font-sans">Tx Hash:</span> {cert.blockchainTxHash}
+                          </p>
                         )}
                       </div>
+
+                      <div className="flex flex-wrap gap-3 mb-3">
+                        <button
+                          onClick={() => downloadPdf(cert)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
+                        >
+                          <i className="bx bx-file"></i>
+                          Certificate PDF
+                        </button>
+                        <button
+                          onClick={() => downloadMetadata(cert)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
+                        >
+                          <i className="bx bx-data"></i>
+                          Metadata JSON
+                        </button>
+                        <button
+                          onClick={() => downloadProof(cert)}
+                          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
+                        >
+                          <i className="bx bx-shield-alt-2"></i>
+                          Proof Package
+                        </button>
+                        <button
+                          onClick={() => downloadCanonical(cert)}
+                          className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
+                        >
+                          <i className="bx bx-code-curly"></i>
+                          Canonical Payload
+                        </button>
+                        {cert.blockchainTxHash && (
+                          <a
+                            href={`https://polygonscan.com/tx/${cert.blockchainTxHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
+                          >
+                            <i className="bx bx-link-external"></i>
+                            View Transaction
+                          </a>
+                        )}
+                      </div>
+
+                      {statusKey !== 'revoked' && (
+                        <button
+                          onClick={() => revokeCertificate(cert._id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
+                        >
+                          <i className="bx bx-x-circle"></i>
+                          Revoke Certificate
+                        </button>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -919,6 +1226,100 @@ export default function IssuerDashboard() {
             </div>
           )}
           
+          {/* Blockchain Anchor Tab */}
+          {activeTab === 'blockchain' && (
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-6">Anchor Certificate Hash</h2>
+
+              <div className="grid gap-6 mb-8 md:grid-cols-2">
+                <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">MetaMask Status</h3>
+                  <p className="text-gray-300 mb-2"><span className="text-gray-400">Account:</span> {displayAccount}</p>
+                  <p className="text-gray-300 mb-4"><span className="text-gray-400">Network:</span> {displayChainName}</p>
+                  <button
+                    type="button"
+                    onClick={connectMetamask}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
+                  >
+                    <i className="bx bxl-metamask text-lg"></i>
+                    {metamaskAccount ? 'Reconnect MetaMask' : 'Connect MetaMask'}
+                  </button>
+                </div>
+
+                <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">How Anchoring Works</h3>
+                  <p className="text-gray-300 mb-2">1. Copy the hash you wish to anchor (individual certificate hash or Merkle root).</p>
+                  <p className="text-gray-300 mb-2">2. Optionally provide a contract address that stores transaction metadata, otherwise the transaction sends data to your wallet.</p>
+                  <p className="text-gray-300">3. Submit the transaction and wait for confirmation. Track the resulting transaction hash on your explorer.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleAnchorSubmit} className="space-y-6 bg-gray-700/50 border border-gray-600 rounded-lg p-6 max-w-3xl">
+                <div>
+                  <label className="block text-gray-300 mb-2">Certificate or Merkle Hash *</label>
+                  <input
+                    type="text"
+                    value={hashToAnchor}
+                    onChange={(e) => setHashToAnchor(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    placeholder="0x..."
+                    required
+                  />
+                  <p className="text-gray-500 text-sm mt-2">The value is sent as the transaction data field. Ensure the hash is hex-encoded.</p>
+                </div>
+
+                <div>
+                  <label className="block text-gray-300 mb-2">Target Contract Address (optional)</label>
+                  <input
+                    type="text"
+                    value={contractAddress}
+                    onChange={(e) => setContractAddress(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    placeholder="Defaults to your connected wallet"
+                  />
+                  <p className="text-gray-500 text-sm mt-2">Gas fees apply. Leave empty to anchor directly to your wallet address.</p>
+                </div>
+
+                {anchorStatus.message && (
+                  <div className={`rounded-lg p-4 ${
+                    anchorStatus.type === 'error'
+                      ? 'bg-red-600/20 border border-red-500/30 text-red-300'
+                      : 'bg-green-600/20 border border-green-500/30 text-green-300'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <i className={`bx ${anchorStatus.type === 'error' ? 'bx-error-circle' : 'bx-check-circle'} text-xl`}></i>
+                      <span>{anchorStatus.message}</span>
+                      <button type="button" onClick={() => setAnchorStatus({ type: '', message: '' })} className="ml-auto">
+                        <i className="bx bx-x text-xl"></i>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={isAnchoring}
+                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    {isAnchoring ? (
+                      <>
+                        <i className="bx bx-loader-alt animate-spin"></i>
+                        Anchoring...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bx bx-link-alt"></i>
+                        Anchor Hash
+                      </>
+                    )}
+                  </button>
+                  <p className="text-gray-500 text-sm">MetaMask prompts will appear in your browser to authorize the transaction.</p>
+                </div>
+              </form>
+            </div>
+          )}
+
           {/* Batches Tab */}
           {activeTab === 'batches' && (
             <div>

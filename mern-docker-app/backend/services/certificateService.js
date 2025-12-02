@@ -1,12 +1,10 @@
 const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
+const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
-const { v4: uuidv4 } = require('uuid');
 const Certificate = require('../models/Certificate');
-const User = require('../models/User');
-const Course = require('../models/Course');
 const BlockchainService = require('./blockchainService');
+const storageService = require('./storageService');
+const { canonicalizeCertificate, canonicalStringify } = require('../utils/canonicalizeCertificate');
 
 class CertificateService {
   /**
@@ -54,15 +52,16 @@ class CertificateService {
 
       console.log('Parsed validUntil:', parsedValidUntil);
 
-      // Generate metadata hash
-      const metadata = this.generateMetadata({
+      const issueDate = new Date();
+
+      const { canonical, hash: canonicalHash } = canonicalizeCertificate({
         certificateId,
         studentUniqueCode,
         learner,
         institute,
         course,
         modulesAwarded,
-        issueDate: new Date(),
+        issueDate,
         validUntil: parsedValidUntil,
         ncvqLevel,
         ncvqQualificationCode,
@@ -70,9 +69,26 @@ class CertificateService {
         ncvqQualificationType
       });
 
+      const metadataHash = canonicalHash.startsWith('0x') ? canonicalHash : `0x${canonicalHash}`;
+
+      const { metadata: metadataDoc, hash: metadataDocumentHash } = this.generateMetadata({
+        certificateId,
+        studentUniqueCode,
+        learner,
+        institute,
+        course,
+        modulesAwarded,
+        issueDate,
+        validUntil: parsedValidUntil,
+        ncvqLevel,
+        ncvqQualificationCode,
+        ncvqQualificationTitle,
+        ncvqQualificationType,
+        canonicalHash: metadataHash
+      });
+
       // Generate QR code data
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      const qrCodeData = `${frontendUrl}/verify/${certificateId}`;
+      const qrCodeData = await this.generateQRCode(certificateId, metadataHash);
       
       // Create certificate
       const certificate = new Certificate({
@@ -82,45 +98,81 @@ class CertificateService {
         institute,
         course,
         modulesAwarded,
-        issueDate: new Date(),
+        issueDate,
         validUntil: parsedValidUntil,
         status,
-        metadataHash: metadata.hash,
+        metadataHash,
         qrCodeData,
         ncvqLevel,
         ncvqQualificationCode,
         ncvqQualificationTitle,
-        ncvqQualificationType
+        ncvqQualificationType,
+        storage: {
+          canonical: {
+            hash: metadataHash,
+            rawHash: canonicalHash,
+            payload: canonical
+          }
+        }
       });
 
-      // Generate PDF and update certificate with file paths
-      // Pass the plain object but ensure all required fields are included
-      const certData = {
-        ...certificate.toObject(),
-        certificateId: certificateId,
-        studentUniqueCode: studentUniqueCode,
-        issueDate: new Date(),
+      const fileArtifacts = await this.generateCertificateFiles({
+        certificateId,
+        studentUniqueCode,
+        issueDate,
         validUntil: parsedValidUntil,
         ncvqLevel,
         ncvqQualificationCode,
         ncvqQualificationTitle,
-        ncvqQualificationType
+        ncvqQualificationType,
+        modulesAwarded,
+        learner,
+        institute,
+        course,
+        metadata: metadataDoc,
+        canonicalHash: metadataHash
+      });
+
+      const artifactHash = fileArtifacts.pdfHash.startsWith('0x') ? fileArtifacts.pdfHash : `0x${fileArtifacts.pdfHash}`;
+      const metadataArtifactHash = metadataDocumentHash.startsWith('0x') ? metadataDocumentHash : `0x${metadataDocumentHash}`;
+
+      certificate.artifactHash = artifactHash;
+      certificate.pdfPath = null;
+      certificate.jsonLdPath = null;
+      certificate.storage = {
+        ...(certificate.storage || {}),
+        canonical: {
+          hash: metadataHash,
+          rawHash: canonicalHash,
+          payload: canonical
+        },
+        artifacts: {
+          pdf: {
+            bucket: fileArtifacts.bucketName,
+            fileId: fileArtifacts.pdfFileId,
+            filename: fileArtifacts.pdfFilename,
+            contentType: 'application/pdf',
+            hash: artifactHash
+          },
+          metadata: {
+            bucket: fileArtifacts.bucketName,
+            fileId: fileArtifacts.jsonLdFileId,
+            filename: fileArtifacts.jsonFilename,
+            contentType: 'application/json',
+            hash: metadataArtifactHash
+          }
+        },
+        metadataDocument: metadataDoc
       };
-      const { pdfPath, jsonLdPath } = await this.generateCertificateFiles(certData);
-      certificate.pdfPath = pdfPath;
-      certificate.jsonLdPath = jsonLdPath;
-      
-      // Calculate artifact hash from the full path
-      const fullPdfPath = path.join(__dirname, '../../', pdfPath);
-      certificate.artifactHash = await this.calculateFileHash(fullPdfPath);
 
       // Save certificate to database
+      certificate.markModified('storage');
       await certificate.save();
 
       // Anchor certificate on blockchain (optional: skip for batch flow)
       if (!skipBlockchain) {
         try {
-          const tx = await BlockchainService.anchorSingle(metadata.hash);
+          const tx = await BlockchainService.anchorSingle(metadataHash);
           if (tx && tx.txHash) {
             certificate.blockchainTxHash = tx.txHash;
             await certificate.save();
@@ -146,12 +198,18 @@ class CertificateService {
    * @returns {Promise<Object>} Batch processing results
    */
   static async issueBatchCertificates({ instituteId, certificates }) {
+    const bucketName = process.env.CERTIFICATE_BUCKET_NAME || 'certificateArtifacts';
+
     const results = {
       total: certificates.length,
       successCount: 0,
       failedCount: 0,
       certificates: [],
-      errors: []
+      errors: [],
+      successful: [],
+      failed: [],
+      merkleRoot: null,
+      batchId: null
     };
 
     const createdCertificates = [];
@@ -159,12 +217,10 @@ class CertificateService {
 
     for (const certData of certificates) {
       try {
-        // Validate required fields
         if (!certData.learner || !certData.course || !certData.studentUniqueCode) {
           throw new Error('Missing required fields');
         }
 
-        // Check if certificate already exists
         const exists = await Certificate.findOne({
           learner: certData.learner,
           course: certData.course,
@@ -175,55 +231,75 @@ class CertificateService {
           throw new Error('Certificate already exists for this learner and course');
         }
 
-        // Generate certificate ID
         const certificateId = `CERT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        
-        // Issue certificate
-        const { certificate } = await this.issueCertificate({
-          ...certData,
-          certificateId,
-          institute: instituteId,
-          status: 'Issued'
-        }, { skipBlockchain: true }); // skip per-certificate anchoring for batch
+
+        const { certificate } = await this.issueCertificate(
+          {
+            ...certData,
+            certificateId,
+            institute: instituteId,
+            status: 'Issued'
+          },
+          { skipBlockchain: true }
+        );
 
         createdCertificates.push(certificate);
         metadataHashes.push(certificate.metadataHash);
         results.certificates.push(certificate);
         results.successCount++;
+        results.successful.push({
+          certificateId: certificate.certificateId,
+          metadataHash: certificate.metadataHash,
+          learner: certificate.learner,
+          course: certificate.course,
+          artifactHash: certificate.artifactHash,
+          storage: certificate.storage
+        });
       } catch (error) {
         console.error(`Error processing certificate for student ${certData.studentUniqueCode}:`, error);
         results.failedCount++;
-        results.errors.push({
+        const failure = {
           studentUniqueCode: certData.studentUniqueCode,
           error: error.message
-        });
+        };
+        results.errors.push(failure);
+        results.failed.push(failure);
       }
     }
 
-    // Anchor the batch Merkle root on-chain and store proofs
+    if (metadataHashes.length === 0) {
+      return results;
+    }
+
     try {
       console.log(`🔗 Anchoring batch of ${metadataHashes.length} certificates to blockchain...`);
       const anchorResult = await BlockchainService.anchorBatch(metadataHashes);
-      
+
       if (anchorResult && anchorResult.success && anchorResult.txHash) {
         console.log(`✅ Batch anchored successfully: ${anchorResult.txHash}`);
         console.log(`  - Merkle Root: ${anchorResult.merkleRoot}`);
         console.log(`  - Batch ID: ${anchorResult.batchId}`);
-        
-        // Update each certificate with blockchain data and proofs
+
+        results.blockchainAnchoring = {
+          success: true,
+          txHash: anchorResult.txHash,
+          merkleRoot: anchorResult.merkleRoot,
+          batchId: anchorResult.batchId,
+          gasUsed: anchorResult.gasUsed
+        };
+        results.merkleRoot = anchorResult.merkleRoot;
+        results.batchId = anchorResult.batchId;
+
         for (let i = 0; i < createdCertificates.length; i++) {
           const cert = createdCertificates[i];
           const proofData = anchorResult.proofs[i];
-          
+
           try {
-            // Update certificate with blockchain anchoring data
             cert.blockchainTxHash = anchorResult.txHash;
             cert.merkleRoot = anchorResult.merkleRoot;
             cert.merkleProof = proofData.merkleProof;
             cert.batchId = anchorResult.batchId;
-            await cert.save();
 
-            // Write proof JSON file for download/verification
             const proofJson = {
               certificateId: cert.certificateId,
               metadataHash: cert.metadataHash,
@@ -233,34 +309,64 @@ class CertificateService {
               blockchainTxHash: anchorResult.txHash,
               issuedAt: cert.issueDate.toISOString(),
               verificationInstructions: {
-                step1: "Verify locally using the Merkle proof and root",
+                step1: 'Verify locally using the Merkle proof and root',
                 step2: `Query blockchain for batch root: getBatchRoot(${anchorResult.batchId})`,
-                step3: "Compare computed root with on-chain root"
+                step3: 'Compare computed root with on-chain root'
               }
             };
 
-            const proofPath = path.join(__dirname, '../../uploads/certificates', cert.certificateId, `${cert.certificateId}-proof.json`);
-            const proofDir = path.dirname(proofPath);
-            if (!fs.existsSync(proofDir)) fs.mkdirSync(proofDir, { recursive: true });
-            fs.writeFileSync(proofPath, JSON.stringify(proofJson, null, 2));
-            
-            cert.proofPath = proofPath.replace(/^.*[\\/]uploads[\/]/, 'uploads/');
+            const proofBuffer = Buffer.from(JSON.stringify(proofJson, null, 2), 'utf-8');
+            const proofFileId = await storageService.saveFileFromBuffer(
+              `${cert.certificateId}-proof.json`,
+              proofBuffer,
+              'application/json',
+              {
+                certificateId: cert.certificateId,
+                type: 'certificate-proof',
+                batchId: anchorResult.batchId,
+                canonicalHash: cert.metadataHash
+              }
+            );
+
+            const currentStorage = cert.storage || {};
+            const artifacts = {
+              ...(currentStorage.artifacts || {}),
+              proof: {
+                bucket: bucketName,
+                fileId: proofFileId.toString(),
+                filename: `${cert.certificateId}-proof.json`,
+                contentType: 'application/json'
+              }
+            };
+
+            cert.proofPath = null;
+            cert.storage = {
+              ...currentStorage,
+              artifacts
+            };
+            cert.markModified('storage');
             await cert.save();
-            
+
+            const summaryIndex = results.successful.findIndex(
+              (entry) => entry.certificateId === cert.certificateId
+            );
+
+            if (summaryIndex >= 0) {
+              results.successful[summaryIndex] = {
+                ...results.successful[summaryIndex],
+                blockchainTxHash: anchorResult.txHash,
+                merkleRoot: anchorResult.merkleRoot,
+                merkleProof: proofData.merkleProof,
+                batchId: anchorResult.batchId,
+                storage: cert.storage
+              };
+            }
+
             console.log(`  ✓ Updated certificate ${cert.certificateId} with proof`);
-          } catch (e) {
-            console.warn(`Failed to update certificate ${cert.certificateId}:`, e.message || e);
+          } catch (updateError) {
+            console.warn(`Failed to update certificate ${cert.certificateId}:`, updateError.message || updateError);
           }
         }
-        
-        // Add anchoring info to results
-        results.blockchainAnchoring = {
-          success: true,
-          txHash: anchorResult.txHash,
-          merkleRoot: anchorResult.merkleRoot,
-          batchId: anchorResult.batchId,
-          gasUsed: anchorResult.gasUsed
-        };
       } else if (anchorResult && !anchorResult.success) {
         console.warn('⚠️ Blockchain anchoring skipped:', anchorResult.error || anchorResult.message);
         results.blockchainAnchoring = {
@@ -446,6 +552,8 @@ class CertificateService {
       ]
     };
 
+    metadata.canonicalHash = certificateData.canonicalHash || null;
+
     // Add NCVQ specific fields if available
     if (ncvqLevel || ncvqQualificationCode) {
       metadata.badge.extensions = {
@@ -460,7 +568,7 @@ class CertificateService {
     // Calculate hash of the metadata
     const hash = crypto
       .createHash('sha256')
-      .update(JSON.stringify(metadata))
+      .update(canonicalStringify(metadata))
       .digest('hex');
 
     return { metadata, hash };
@@ -471,161 +579,130 @@ class CertificateService {
    * @private
    */
   static async generateCertificateFiles(certificateData) {
-    const uploadDir = path.join(__dirname, '../../uploads/certificates');
-    const certDir = path.join(uploadDir, certificateData.certificateId);
-    
-    // Ensure upload directory exists
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    const bucketName = process.env.CERTIFICATE_BUCKET_NAME || 'certificateArtifacts';
 
-    // Create certificate directory
-    if (!fs.existsSync(certDir)) {
-      fs.mkdirSync(certDir, { recursive: true });
-    }
+    const metadataDoc = certificateData.metadata || this.generateMetadata(certificateData).metadata;
+    const metadataBuffer = Buffer.from(JSON.stringify(metadataDoc, null, 2), 'utf-8');
 
-    // Generate file paths
-    const pdfPath = path.join(certDir, 'certificate.pdf');
-    const jsonLdPath = path.join(certDir, 'metadata.json');
-    
-    // Generate metadata and save as JSON-LD
-    const { metadata } = this.generateMetadata(certificateData);
-    fs.writeFileSync(jsonLdPath, JSON.stringify(metadata, null, 2));
-    
-    // Generate PDF (placeholder implementation)
-    const pdfContent = `Certificate of Completion\n\n` +
-      `ID: ${certificateData.certificateId}\n` +
-      `Awarded To: ${certificateData.studentUniqueCode}\n` +
-      `Course: ${certificateData.ncvqQualificationTitle || 'Not specified'}\n` +
-      `Issued On: ${new Date().toLocaleDateString()}\n` +
-      `Valid Until: ${certificateData.validUntil ? new Date(certificateData.validUntil).toLocaleDateString() : 'N/A'}\n`;
-    
-    fs.writeFileSync(pdfPath, pdfContent);
-    
-    return {
-      pdfPath: pdfPath.replace(/^.*[\\/]uploads[\\/]/, 'uploads/'),
-      jsonLdPath: jsonLdPath.replace(/^.*[\\/]uploads[\\/]/, 'uploads/')
-    };
-  }
+    const pdfBuffer = await this.generatePDF({
+      ...certificateData,
+      metadata: metadataDoc
+    });
 
-  /**
-   * Generate QR code for certificate
-   * @private
-   */
-  static async generateQRCode(certificateId, metadataHash) {
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify/${certificateId}`;
-    return await QRCode.toDataURL(verificationUrl);
-  }
+    const pdfHash = crypto.createHash('sha256').update(pdfBuffer).digest('hex');
 
-  static async generatePDF(data, outputPath) {
-    // Simplified text-based certificate placeholder
-    // In production, use a proper PDF library like pdfkit or puppeteer
-    const certificateText = `
-CERTIFICATE OF ACHIEVEMENT
-========================
+    const pdfFilename = `${certificateData.certificateId}.pdf`;
+    const jsonFilename = `${certificateData.certificateId}.json`;
 
-This is to certify that
-
-${data.learnerName || 'Student Name'}
-
-has successfully completed
-
-${data.courseName || 'Course Name'}
-
-Issue Date: ${new Date(data.issueDate).toLocaleDateString()}
-Certificate ID: ${data.certificateId}
-Student ID: ${data.studentUniqueCode}
-
-NCVQ Level: ${data.ncvqLevel || 'N/A'}
-Qualification Code: ${data.ncvqQualificationCode || 'N/A'}
-
-Issued by: ${data.instituteName || 'Institution'}
-
-========================
-This is a placeholder certificate file.
-In production, this would be a properly formatted PDF with QR code and signature.
-    `;
-    
-    fs.writeFileSync(outputPath, certificateText);
-    return outputPath;
-  }
-  
-  static generateJsonLd(data) {
-    return {
-      "@context": [
-        "https://www.w3.org/2018/credentials/v1",
-        "https://w3id.org/blockcerts/v3"
-      ],
-      "type": ["VerifiableCredential", "BlockcertsCredential"],
-      "issuer": {
-        "id": data.instituteId,
-        "name": data.instituteName,
-        "type": "Profile",
-        "url": data.instituteUrl
-      },
-      "issuanceDate": new Date().toISOString(),
-      "credentialSubject": {
-        "id": `did:example:${data.studentUniqueCode}`,
-        "name": data.learnerName,
-        "achievement": {
-          "id": `urn:uuid:${data.certificateId}`,
-          "type": "Achievement",
-          "name": data.courseName,
-          "description": data.courseDescription,
-          "criteria": {
-            "narrative": data.criteriaNarrative || "Successful completion of all required assessments."
-          },
-          "level": data.ncvqLevel,
-          "qualificationCode": data.ncvqQualificationCode,
-          "qualificationTitle": data.ncvqQualificationTitle,
-          "qualificationType": data.ncvqQualificationType
-        }
-      },
-      "proof": {
-        "type": "MerkleProof2019",
-        "created": new Date().toISOString(),
-        "proofPurpose": "assertionMethod",
-        "verificationMethod": `did:example:${data.instituteId}#key-1`
+    const pdfFileId = await storageService.saveFileFromBuffer(
+      pdfFilename,
+      pdfBuffer,
+      'application/pdf',
+      {
+        certificateId: certificateData.certificateId,
+        type: 'certificate-pdf',
+        canonicalHash: certificateData.canonicalHash
       }
+    );
+
+    const jsonLdFileId = await storageService.saveFileFromBuffer(
+      jsonFilename,
+      metadataBuffer,
+      'application/json',
+      {
+        certificateId: certificateData.certificateId,
+        type: 'certificate-metadata',
+        canonicalHash: certificateData.canonicalHash
+      }
+    );
+
+    return {
+      bucketName,
+      pdfFileId: pdfFileId.toString(),
+      jsonLdFileId: jsonLdFileId.toString(),
+      pdfFilename,
+      jsonFilename,
+      pdfHash
     };
   }
-  
-  static generateMetadataHash(data) {
-    const hash = crypto.createHash('sha256');
-    hash.update(JSON.stringify({
-      certificateId: data.certificateId,
-      studentUniqueCode: data.studentUniqueCode,
-      learnerName: data.learnerName,
-      courseName: data.courseName,
-      issueDate: data.issueDate,
-      ncvqLevel: data.ncvqLevel,
-      ncvqQualificationCode: data.ncvqQualificationCode
-    }));
-    return hash.digest('hex');
-  }
-  
-  static async calculateFileHash(filePath) {
+
+  static async generatePDF(data) {
+    const metadata = data.metadata || {};
+    const badge = metadata.badge || {};
+    const issuerProfile = badge.issuer || {};
+    const modulesAwarded = Array.isArray(data.modulesAwarded) ? data.modulesAwarded.filter(Boolean) : [];
+
+    const learnerDisplayName = data.learnerName || metadata.recipient?.name || metadata.recipient?.identity || data.studentUniqueCode || 'Learner';
+    const courseTitle = data.courseName || badge.name || 'Certified Course';
+    const instituteName = data.instituteName || issuerProfile.name || 'Issuing Institution';
+    const issueDate = data.issueDate ? new Date(data.issueDate) : new Date();
+    const expiryDate = data.validUntil ? new Date(data.validUntil) : null;
+
     return new Promise((resolve, reject) => {
-      const hash = crypto.createHash('sha256');
-      const stream = fs.createReadStream(filePath);
-      
-      stream.on('data', (chunk) => hash.update(chunk));
-      stream.on('end', () => resolve(hash.digest('hex')));
-      stream.on('error', reject);
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks = [];
+
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      doc.font('Helvetica-Bold').fontSize(26).text('Certificate of Achievement', { align: 'center' });
+      doc.moveDown(1.5);
+
+      doc.font('Helvetica').fontSize(14).text(`This certifies that`, { align: 'center' });
+      doc.moveDown(0.5);
+      doc.font('Helvetica-Bold').fontSize(20).text(learnerDisplayName, { align: 'center' });
+      doc.moveDown(1);
+
+      doc.font('Helvetica').fontSize(14).text(`has successfully completed`, { align: 'center' });
+      doc.moveDown(0.5);
+      doc.font('Helvetica-Bold').fontSize(18).text(courseTitle, { align: 'center' });
+      doc.moveDown(1.25);
+
+      if (modulesAwarded.length) {
+        doc.font('Helvetica-Bold').fontSize(14).text('Modules Awarded:', { underline: true });
+        doc.moveDown(0.25);
+        doc.font('Helvetica').fontSize(12);
+        modulesAwarded.forEach((module, index) => {
+          doc.text(`${index + 1}. ${module}`);
+        });
+        doc.moveDown(0.75);
+      }
+
+      doc.font('Helvetica').fontSize(12);
+      doc.text(`Certificate ID: ${data.certificateId}`, { continued: false });
+      doc.text(`Student ID: ${data.studentUniqueCode}`);
+      doc.text(`Issue Date: ${issueDate.toLocaleDateString()}`);
+      if (expiryDate) {
+        doc.text(`Valid Until: ${expiryDate.toLocaleDateString()}`);
+      }
+      doc.text(`NCVQ Level: ${data.ncvqLevel || 'N/A'}`);
+      doc.text(`Qualification Code: ${data.ncvqQualificationCode || 'N/A'}`);
+      doc.moveDown(1.25);
+
+      doc.font('Helvetica-Bold').fontSize(14).text(instituteName);
+      doc.font('Helvetica').fontSize(12).text('Authorized Issuer');
+
+      doc.moveDown(2);
+      doc.fontSize(10).fillColor('#555555');
+      doc.text('This document is digitally generated and verifiable through the accompanying metadata and hash records.', {
+        align: 'center'
+      });
+
+      doc.end();
     });
   }
-  
+
   static async generateQRCode(certificateId, metadataHash) {
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify/${certificateId}`;
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify/${certificateId}`;
     const qrData = {
       certificateId,
       verificationUrl,
       metadataHash,
       timestamp: Date.now()
     };
-    
+
     try {
-      // Generate QR code as data URL
       return await QRCode.toDataURL(JSON.stringify(qrData));
     } catch (err) {
       console.error('Error generating QR code:', err);
