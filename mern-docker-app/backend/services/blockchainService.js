@@ -154,11 +154,10 @@ class BlockchainService {
       console.log(`🔗 Starting batch anchoring for ${certificateData.length} certificates...`);
       
       // Extract or generate hashes
-      const certificateHashes = certificateData.map(cert => {
-        if (typeof cert === 'string') {
-          return cert; // Already a hash
-        }
-        return cert.metadataHash || hashCertificate(cert);
+      const certificateHashes = certificateData.map((cert) => {
+        const rawHash = typeof cert === 'string' ? cert : cert.metadataHash || hashCertificate(cert);
+        const prefixed = rawHash.startsWith('0x') ? rawHash : `0x${rawHash}`;
+        return ethers.hexlify(ethers.zeroPadValue(prefixed, 32));
       });
 
       // Step 1: Create Merkle Tree

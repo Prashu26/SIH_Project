@@ -10,6 +10,8 @@ const logger = require('./utils/logger');
 const { initBlockchainService } = require('./services/blockchain');
 const { initIPFS } = require('./services/ipfs');
 const { seedDemoUsers } = require('./scripts/seedDemoUsers');
+const { seedLearnerBatch } = require('./scripts/seedLearnerBatch');
+const { seedCoursesFromTemplate } = require('./scripts/seedCoursesFromTemplate');
 
 const app = express();
 
@@ -34,8 +36,10 @@ db.once('open', async () => {
   // Seed demo users for testing
   try {
     await seedDemoUsers();
+    await seedLearnerBatch();
+    await seedCoursesFromTemplate();
   } catch (error) {
-    console.error('Error seeding demo users:', error);
+    console.error('Error during initial data seeding:', error);
   }
 });
 
@@ -71,6 +75,7 @@ const aiRoutes = require('./routes/ai');
 const adminRoutes = require('./routes/admin');
 const courseRoutes = require('./routes/courses');
 const issuerRoutes = require('./routes/issuer');
+const certificateRoutes = require('./routes/certificates');
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/artifacts', express.static(path.join(__dirname, 'generated')));
@@ -84,6 +89,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/issuer', issuerRoutes);
+app.use('/api/certificates', certificateRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

@@ -116,6 +116,9 @@ router.get('/certificates', auth('learner'), async (req, res) => {
           }
         : null,
       pdfPath: cert.pdfPath,
+      pdfArtifact: cert.storage?.artifacts?.pdf || null,
+      metadataArtifact: cert.storage?.artifacts?.metadata || null,
+      proofArtifact: cert.storage?.artifacts?.proof || null,
     }));
 
     res.json({ certificates: formatted });
