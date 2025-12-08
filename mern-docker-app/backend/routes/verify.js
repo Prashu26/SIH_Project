@@ -6,7 +6,10 @@ const Certificate = require('../models/Certificate');
 const CertificateService = require('../services/certificateService');
 const BlockchainService = require('../services/blockchainService');
 const blockchainService = new BlockchainService();
+const LocalChainService = require('../services/localChainService');
+const localChain = new LocalChainService();
 const logger = require('../utils/logger');
+const { canonicalizeCertificate } = require('../utils/canonicalizeCertificate');
 
 const router = express.Router();
 
@@ -358,6 +361,130 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       status: 'Error',
       message: error.message || 'Verification failed' 
     });
+  }
+});
+
+/**
+ * POST /api/verify/single/store
+ * Accepts JSON body `{ certificate }` or multipart file upload (JSON file or PDF).
+ * Stores SHA256(canonicalized certificate) on local Hardhat contract under regNo/key.
+ */
+router.post('/single/store', upload.single('file'), async (req, res) => {
+  try {
+    let certObj = null;
+    let key = req.body.regNo || req.body.reg_no || req.body.studentUniqueCode || null;
+
+    if (req.file) {
+      // If uploaded JSON file
+      const mimetype = req.file.mimetype || '';
+      if (mimetype === 'application/json' || req.file.originalname.toLowerCase().endsWith('.json')) {
+        try {
+          certObj = JSON.parse(req.file.buffer.toString());
+        } catch (e) {
+          return res.status(400).json({ success: false, message: 'Invalid JSON file' });
+        }
+      } else if (mimetype === 'application/pdf') {
+        // PDF uploaded: we will store hash of PDF bytes if no JSON available
+        const hexHash = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
+        if (!key) return res.status(400).json({ success: false, message: 'regNo required when uploading raw PDF' });
+        try {
+          const result = await localChain.storeHash(key, hexHash);
+          return res.json({ success: true, key, hash: hexHash, txHash: result.txHash });
+        } catch (err) {
+          return res.status(500).json({ success: false, message: 'Failed to store on local chain: ' + err.message });
+        }
+      } else {
+        return res.status(400).json({ success: false, message: 'Unsupported file type. Upload JSON or PDF.' });
+      }
+    }
+
+    // If certificate in JSON body
+    if (!certObj && req.body.certificate) {
+      certObj = typeof req.body.certificate === 'string' ? JSON.parse(req.body.certificate) : req.body.certificate;
+    }
+
+    if (!certObj) {
+      return res.status(400).json({ success: false, message: 'Certificate JSON required in body or uploaded as file' });
+    }
+
+    // Canonicalize and compute SHA256
+    const { canonicalString, hash } = canonicalizeCertificate(certObj);
+    const hexHash = hash; // plain hex (no 0x)
+
+    // Resolve key
+    if (!key) key = certObj.reg_no || certObj.studentUniqueCode || certObj.student_unique_code || certObj.certificateId || null;
+    if (!key) return res.status(400).json({ success: false, message: 'regNo (key) is required' });
+
+    try {
+      const result = await localChain.storeHash(key, hexHash);
+      return res.json({ success: true, key, hash: hexHash, txHash: result.txHash });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Failed to store on local chain: ' + err.message });
+    }
+  } catch (error) {
+    logger.error('single/store failed:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/verify/single/verify
+ * Accepts JSON body `{ certificate }` or multipart file upload (JSON file or PDF).
+ * Recomputes SHA256 and compares with on-chain stored value.
+ */
+router.post('/single/verify', upload.single('file'), async (req, res) => {
+  try {
+    let certObj = null;
+    let key = req.body.regNo || req.body.reg_no || req.body.studentUniqueCode || null;
+
+    if (req.file) {
+      const mimetype = req.file.mimetype || '';
+      if (mimetype === 'application/json' || req.file.originalname.toLowerCase().endsWith('.json')) {
+        try {
+          certObj = JSON.parse(req.file.buffer.toString());
+        } catch (e) {
+          return res.status(400).json({ success: false, message: 'Invalid JSON file' });
+        }
+      } else if (mimetype === 'application/pdf') {
+        // PDF: compute PDF SHA256
+        const pdfHash = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
+        if (!key) return res.status(400).json({ success: false, message: 'regNo required when uploading raw PDF' });
+        try {
+          const stored = await localChain.verifyHash(key);
+          const valid = stored === pdfHash;
+          return res.json({ success: valid, valid, stored, computed: pdfHash, key });
+        } catch (err) {
+          return res.status(500).json({ success: false, message: 'Failed to verify on local chain: ' + err.message });
+        }
+      } else {
+        return res.status(400).json({ success: false, message: 'Unsupported file type. Upload JSON or PDF.' });
+      }
+    }
+
+    if (!certObj && req.body.certificate) {
+      certObj = typeof req.body.certificate === 'string' ? JSON.parse(req.body.certificate) : req.body.certificate;
+    }
+
+    if (!certObj) {
+      return res.status(400).json({ success: false, message: 'Certificate JSON required in body or uploaded as file' });
+    }
+
+    const { hash } = canonicalizeCertificate(certObj);
+    const hexHash = hash;
+
+    if (!key) key = certObj.reg_no || certObj.studentUniqueCode || certObj.student_unique_code || certObj.certificateId || null;
+    if (!key) return res.status(400).json({ success: false, message: 'regNo (key) is required' });
+
+    try {
+      const stored = await localChain.verifyHash(key);
+      const valid = stored === hexHash;
+      return res.json({ success: valid, valid, stored, computed: hexHash, key });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Failed to verify on local chain: ' + err.message });
+    }
+  } catch (error) {
+    logger.error('single/verify failed:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 });
 

@@ -131,6 +131,55 @@ export default function Verify() {
     }
   };
 
+  // Local Hardhat store/verify UI state
+  const [localJsonText, setLocalJsonText] = useState('');
+  const [localRegNo, setLocalRegNo] = useState('');
+  const [localResult, setLocalResult] = useState(null);
+  const [localError, setLocalError] = useState('');
+  const [localLoading, setLocalLoading] = useState(false);
+
+  const handleLocalFile = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    try {
+      const txt = await f.text();
+      setLocalJsonText(txt);
+      setLocalError('');
+    } catch (err) {
+      setLocalError('Failed to read file');
+    }
+  };
+
+  const callLocalEndpoint = async (action) => {
+    setLocalError('');
+    setLocalResult(null);
+    setLocalLoading(true);
+    try {
+      let resp;
+      if (localJsonText && localJsonText.trim()) {
+        const payload = { certificate: JSON.parse(localJsonText) };
+        resp = await fetch(`${API_BASE}/api/verify/single/${action}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+      } else if (localRegNo && localRegNo.trim()) {
+        const form = new FormData();
+        form.append('regNo', localRegNo.trim());
+        resp = await fetch(`${API_BASE}/api/verify/single/${action}`, { method: 'POST', body: form });
+      } else {
+        setLocalError('Provide certificate JSON or regNo');
+        setLocalLoading(false);
+        return;
+      }
+
+      const data = await resp.json();
+      setLocalResult({ status: resp.status, data });
+    } catch (err) {
+      setLocalError(err.message || 'Request failed');
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
   // Clear result / error
   const clear = () => { setResult(null); setError(''); setFile(null); setQuery(''); };
 
@@ -305,6 +354,35 @@ export default function Verify() {
 
             {/* Errors + Result */}
             {error && <p className="text-rose-400 mt-4">{error}</p>}
+
+            {/* Local Hardhat store/verify UI */}
+            <div className="mt-6 p-4 rounded-lg border border-slate-700/20 bg-black/20">
+              <h4 className="text-lg text-sky-100 font-semibold mb-2">Local Hardhat (store / verify)</h4>
+              <p className="text-sm text-sky-200/70 mb-3">Paste certificate JSON or upload a JSON file, or provide a regNo to store/verify against the local Hardhat contract.</p>
+
+              <div className="mb-3">
+                <textarea className="w-full h-28 p-2 rounded bg-transparent border border-slate-700 text-sky-100" value={localJsonText} onChange={(e) => setLocalJsonText(e.target.value)} placeholder='{"name":"Alice","reg_no":"18CS1234"}' />
+              </div>
+
+              <div className="flex items-center gap-3 mb-3">
+                <input type="file" accept="application/json" onChange={handleLocalFile} />
+                <input className="border rounded p-2 bg-transparent text-sky-100" placeholder="regNo (optional)" value={localRegNo} onChange={(e) => setLocalRegNo(e.target.value)} />
+              </div>
+
+              <div className="flex gap-3">
+                <button className="px-4 py-2 bg-indigo-600 text-white rounded" onClick={() => callLocalEndpoint('store')} disabled={localLoading}>Store on Local Chain</button>
+                <button className="px-4 py-2 bg-emerald-600 text-white rounded" onClick={() => callLocalEndpoint('verify')} disabled={localLoading}>Verify on Local Chain</button>
+              </div>
+
+              {localLoading && <p className="text-sky-200 text-sm mt-2">Processing...</p>}
+              {localError && <p className="text-rose-400 text-sm mt-2">{localError}</p>}
+              {localResult && (
+                <div className="mt-3 text-xs text-sky-100 bg-black/40 p-2 rounded">
+                  <div>HTTP: {localResult.status}</div>
+                  <pre className="mt-2 whitespace-pre-wrap">{JSON.stringify(localResult.data, null, 2)}</pre>
+                </div>
+              )}
+            </div>
 
             {result && (
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">

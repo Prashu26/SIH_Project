@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import 'boxicons/css/boxicons.min.css';
+import API_BASE from '../services/api';
 
 const CertificateVerification = () => {
-  const [verificationMethod, setVerificationMethod] = useState('id');
-  const [certificateId, setCertificateId] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [verificationResult, setVerificationResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -20,31 +19,6 @@ const CertificateVerification = () => {
     }
   };
 
-  const verifyByCertificateId = async () => {
-    if (!certificateId.trim()) {
-      setError('Please enter a certificate ID');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch(`/api/verify/${encodeURIComponent(certificateId.trim())}`);
-      const result = await response.json();
-
-      setVerificationResult({
-        ...result,
-        method: 'Certificate ID',
-        input: certificateId.trim()
-      });
-    } catch (err) {
-      setError('Failed to verify certificate. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const verifyByFileUpload = async () => {
     if (!selectedFile) {
       setError('Please select a file to verify');
@@ -58,7 +32,7 @@ const CertificateVerification = () => {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch('/api/verify/upload', {
+      const response = await fetch(`${API_BASE}/api/verify/upload`, {
         method: 'POST',
         body: formData
       });
@@ -79,11 +53,7 @@ const CertificateVerification = () => {
   };
 
   const handleVerify = () => {
-    if (verificationMethod === 'id') {
-      verifyByCertificateId();
-    } else {
-      verifyByFileUpload();
-    }
+    verifyByFileUpload();
   };
 
   const getStatusIcon = (status) => {
@@ -125,74 +95,31 @@ const CertificateVerification = () => {
         </p>
       </div>
 
-      {/* Verification Method Selection */}
-      <div className="mb-6">
-        <div className="flex space-x-4 mb-4">
-          <button
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              verificationMethod === 'id'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            onClick={() => setVerificationMethod('id')}
-          >
-            <i className="bx bx-id-card mr-2"></i>
-            Certificate ID
-          </button>
-          <button
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              verificationMethod === 'file'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            onClick={() => setVerificationMethod('file')}
-          >
-            <i className="bx bx-upload mr-2"></i>
-            File Upload
-          </button>
-        </div>
-      </div>
-
       {/* Input Section */}
       <div className="mb-6">
-        {verificationMethod === 'id' ? (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Certificate ID
-            </label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Upload Certificate File
+          </label>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
             <input
-              type="text"
-              value={certificateId}
-              onChange={(e) => setCertificateId(e.target.value)}
-              placeholder="Enter certificate ID (e.g., CERT-1234567890-123)"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              type="file"
+              onChange={handleFileSelect}
+              accept=".pdf,image/*"
+              className="hidden"
+              id="file-upload"
             />
-          </div>
-        ) : (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Certificate File
+            <label htmlFor="file-upload" className="cursor-pointer">
+              <i className="bx bx-cloud-upload text-4xl text-gray-400 mb-2"></i>
+              <p className="text-gray-600">
+                {selectedFile ? selectedFile.name : 'Click to select PDF or image file'}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Supported formats: PDF, JPG, PNG
+              </p>
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-              <input
-                type="file"
-                onChange={handleFileSelect}
-                accept=".pdf,image/*"
-                className="hidden"
-                id="file-upload"
-              />
-              <label htmlFor="file-upload" className="cursor-pointer">
-                <i className="bx bx-cloud-upload text-4xl text-gray-400 mb-2"></i>
-                <p className="text-gray-600">
-                  {selectedFile ? selectedFile.name : 'Click to select PDF or image file'}
-                </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Supported formats: PDF, JPG, PNG
-                </p>
-              </label>
-            </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Error Display */}
@@ -207,7 +134,7 @@ const CertificateVerification = () => {
       <div className="mb-8">
         <button
           onClick={handleVerify}
-          disabled={loading || (verificationMethod === 'id' && !certificateId.trim()) || (verificationMethod === 'file' && !selectedFile)}
+          disabled={loading || !selectedFile}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
         >
           {loading ? (
@@ -325,18 +252,6 @@ const CertificateVerification = () => {
             </div>
           )}
 
-          {/* File Hash Information */}
-          {verificationResult.fileHash && (
-            <div className="border-t pt-4">
-              <h4 className="font-medium mb-2">File Information</h4>
-              <p className="text-sm">
-                <strong>File Hash:</strong> 
-                <span className="font-mono text-xs break-all ml-2">
-                  {verificationResult.fileHash}
-                </span>
-              </p>
-            </div>
-          )}
         </div>
       )}
 

@@ -15,6 +15,9 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Features from './pages/Features';
 import Team from './pages/Team';
+import OrganizationRegister from './pages/OrganizationRegister';
+import OrganizationLogin from './pages/OrganizationLogin';
+import OrganizationDashboard from './pages/OrganizationDashboard';
 
 // Auth context for managing user state
 const AuthContext = React.createContext();
@@ -37,7 +40,7 @@ function RequireAuth({ allowedRoles, children }) {
 function Layout() {
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
-  const isDashboard = ['/learner', '/institution', '/institute', '/admin'].some(path => 
+  const isDashboard = ['/learner', '/institution', '/institute', '/admin', '/organization/dashboard'].some(path => 
     location.pathname.startsWith(path)
   );
 
@@ -47,14 +50,14 @@ function Layout() {
       <div className="fixed inset-0 opacity-10 pointer-events-none"></div>
       <div className="fixed top-[20%] right-[-5%] h-0 w-[40rem] shadow-[0_0_50px_#4cc9f0] -rotate-[30deg] opacity-30"></div>
       
-      {/* Always show header */}
-      <Header />
+      {/* Show header only for non-organization auth pages */}
+      {!location.pathname.startsWith('/organization') && <Header />}
       
       {/* Show hero only on landing page */}
       {isLandingPage && <Hero />}
       
       {/* Main content grows to push footer down */}
-      <main className={`${!isLandingPage ? 'pt-20' : ''} ${isDashboard ? 'min-h-screen' : ''} flex-1`}>
+      <main className={`${!isLandingPage && !location.pathname.startsWith('/organization') ? 'pt-20' : ''} ${isDashboard ? 'min-h-screen' : ''} flex-1`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -64,6 +67,12 @@ function Layout() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/features" element={<Features />} />
           <Route path="/team" element={<Team />} />
+          
+          {/* Organization Routes */}
+          <Route path="/organization/register" element={<OrganizationRegister />} />
+          <Route path="/organization/login" element={<OrganizationLogin />} />
+          <Route path="/organization/dashboard" element={<OrganizationDashboard />} />
+          
           <Route 
             path="/learner/*" 
             element={
@@ -179,7 +188,7 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <div className="relative min-h-screen">
           {/* Full-viewport spline background (interactive when possible) */}
           <div aria-hidden className="fixed inset-0 -z-10">

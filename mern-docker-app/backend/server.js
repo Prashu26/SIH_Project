@@ -78,6 +78,8 @@ const adminRoutes = require('./routes/admin');
 const courseRoutes = require('./routes/courses');
 const issuerRoutes = require('./routes/issuer');
 const certificateRoutes = require('./routes/certificates');
+const organizationRoutes = require('./routes/organization');
+const messageRoutes = require('./routes/messages');
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/artifacts', express.static(path.join(__dirname, 'generated')));
@@ -92,8 +94,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/issuer', issuerRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/organization', organizationRoutes);
+app.use('/api/messages', messageRoutes);
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

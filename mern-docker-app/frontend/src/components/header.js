@@ -137,6 +137,15 @@ const Header = () => {
                 <i className="bx bx-user-plus"></i>
                 Sign Up
               </Link>
+              <div className="border-l border-gray-600 pl-3">
+                <Link
+                  to="/organization/login"
+                  className="flex items-center gap-2 text-gray-300 hover:text-white px-3 py-2 rounded-lg hover:bg-gray-800/50 transition-all text-sm"
+                >
+                  <i className="bx bx-buildings"></i>
+                  For Organizations
+                </Link>
+              </div>
             </div>
           )}
         </div>
