@@ -11,10 +11,7 @@
 /mern-docker-app/backend/blockchain/cache/
 
 # Environment & secrets
-*.env
-*.env.*
-/mern-docker-app/backend/.env
-/mern-docker-app/frontend/.env
+
 
 # Logs & runtime output
 *.log
