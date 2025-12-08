@@ -45,6 +45,19 @@ services:
       - "3000:80"
     depends_on:
       - backend
+      - digimocker
+    networks:
+      - mern-network
+    restart: unless-stopped
+
+  # Digimocker (optional digilocker microservice)
+  digimocker:
+    build: ./digimocker
+    container_name: digimocker
+    ports:
+      - "3001:3000"
+    environment:
+      - PORT=3000
     networks:
       - mern-network
     restart: unless-stopped

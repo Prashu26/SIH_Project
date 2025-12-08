@@ -12,6 +12,7 @@ const { initIPFS } = require('./services/ipfs');
 const { seedDemoUsers } = require('./scripts/seedDemoUsers');
 const { seedLearnerBatch } = require('./scripts/seedLearnerBatch');
 const { seedCoursesFromTemplate } = require('./scripts/seedCoursesFromTemplate');
+const AnchoringService = require('./services/anchoringService');
 
 const app = express();
 
@@ -58,6 +59,14 @@ db.once('open', async () => {
       // initIPFS is async (uses dynamic import). Initialize but don't block startup.
       initIPFS().catch((err) => logger.error('Failed to init IPFS:', err));
     }
+    // Start anchoring service in background (non-blocking) and expose on app.locals
+    try {
+      const anchoring = new AnchoringService({ intervalMs: 60000, batchSize: 50 });
+      anchoring.start();
+      app.locals.anchoringService = anchoring;
+    } catch (err) {
+      logger.warn('Anchoring service not started:', err.message || err);
+    }
   } catch (error) {
     logger.error('Unexpected error initializing services: %s', error.message);
   }
@@ -80,6 +89,7 @@ const issuerRoutes = require('./routes/issuer');
 const certificateRoutes = require('./routes/certificates');
 const organizationRoutes = require('./routes/organization');
 const messageRoutes = require('./routes/messages');
+const documentRoutes = require('./routes/documents');
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/artifacts', express.static(path.join(__dirname, 'generated')));
@@ -96,6 +106,7 @@ app.use('/api/issuer', issuerRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/organization', organizationRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/documents', documentRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

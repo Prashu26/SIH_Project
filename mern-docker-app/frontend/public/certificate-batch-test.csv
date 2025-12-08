@@ -1,5 +1,5 @@
-learnerEmail,studentUniqueCode,courseName,courseCode,skills,validUntil
-hgabhishekhg441@gmail.com,HGAB-001,Full Stack Development,C1001,"HTML,CSS,JavaScript,React",2026-12-31
-abhishekhg2003@gmail.com,ABHI-002,Machine Learning Foundations,C1002,"Python,NumPy,Pandas,Model Training",2026-12-31
-au58876@gmail.com,AU58876-003,Cybersecurity Operations,C1004,"Network Security,Threat Hunting",2026-12-31
-sspservices99@gmail.com,AU567-002,Cybersecurity,C1003,"Network",2025-12-28
+learnerEmail,studentUniqueCode,courseName,skills,validUntil,fatherName,motherName,dob,address,district,state,trade,duration,session,testMonth,testYear,nsqfLevel
+hgabhishekhg441@gmail.com,HGAB-001,Full Stack Development,"Tack welding and bead practice",2026-12-31,"Ravi","Pavani",01-01-2005,"123 Main St","Bengalur","Karnataka","Welding","3 months","2024–2025","March","2025","Level 1"
+abhishekhg2003@gmail.com,ABHI-002,Machine Learning Foundations,"Introduction to MIG & TIG welding",2026-12-31,"Raj","Pooja",01-02-2005,"456 Main St","Jaipur","Rajasthan","Welding","3 months","2024–2025","March","2025","Level 2"
+au58876@gmail.com,AU58876-003,Cybersecurity Operations,"Handling welding tools & equipment",2026-12-31,"Rakesh","Ramya",07-09-2005,"789 Main St","Ranchi","Jarkond","Welding"."3 months","2024–2025","March","2025","Level 3"
+sspservices99@gmail.com,AU567-002,Cybersecurity,"Engine Basics, Tools Handling, Safety & Maintenance",2025-12-28,"Ram","Sitha",08-09-2005,"345 Main St","Mumbai","Maharastra","Welding","3 months","2024–2025","March","2025","Level 4"

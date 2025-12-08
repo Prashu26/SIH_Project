@@ -7,7 +7,8 @@ import Home from './pages/Home';
 import Login from './pages/LoginNew';
 import Register from './pages/Register';
 import Verify from './pages/Verify';
-import LearnerDashboard from './pages/LearnerDashboard';
+import StudentDashboard from './pages/StudentDashboard';
+import Documents from './pages/Documents';
 import IssuerDashboard from './pages/IssuerDashboard';
 import NotFound from './pages/NotFound';
 import AdminDashboard from './pages/AdminDashboard';
@@ -19,8 +20,8 @@ import OrganizationRegister from './pages/OrganizationRegister';
 import OrganizationLogin from './pages/OrganizationLogin';
 import OrganizationDashboard from './pages/OrganizationDashboard';
 
-// Auth context for managing user state
-const AuthContext = React.createContext();
+// Auth context for managing user state (moved to separate module)
+import AuthContext, { AuthProvider } from './contexts/AuthContext';
 
 function RequireAuth({ allowedRoles, children }) {
   const { user } = React.useContext(AuthContext);
@@ -77,9 +78,17 @@ function Layout() {
             path="/learner/*" 
             element={
               <RequireAuth allowedRoles={['learner']}>
-                <LearnerDashboard />
+                <StudentDashboard />
               </RequireAuth>
             } 
+          />
+          <Route 
+            path="/documents" 
+            element={
+              <RequireAuth allowedRoles={['learner']}>
+                <Documents />
+              </RequireAuth>
+            }
           />
           <Route 
             path="/institution/*" 
@@ -126,39 +135,12 @@ function Layout() {
 const SCENE_URL = 'https://prod.spline.design/S82vCD0u7Y-1ZAF0/scene.splinecode';
 
 export default function App() {
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [SplineComp, setSplineComp] = useState(null);
   const [splineFailed, setSplineFailed] = useState(false);
 
-  // Check for existing session on app load
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
-    }
-    setLoading(false);
-  }, []);
-
-  const login = (userData, token) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-  };
+  // Keep a short loading state while AuthProvider initializes
+  useEffect(() => setLoading(false), []);
 
   useEffect(() => {
     let mounted = true;
@@ -187,7 +169,7 @@ export default function App() {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <div className="relative min-h-screen">
           {/* Full-viewport spline background (interactive when possible) */}
@@ -214,6 +196,6 @@ export default function App() {
           </div>
         </div>
       </BrowserRouter>
-    </AuthContext.Provider>
+    </AuthProvider>
   );
 }
