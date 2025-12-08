@@ -4,9 +4,7 @@ const jwt = require('jsonwebtoken');
 const Organization = require('../models/Organization');
 const User = require('../models/User');
 const Certificate = require('../models/Certificate');
-const Message = require('../models/Message');
 const auth = require('../middleware/auth');
-const { upload, handleUploadErrors } = require('../utils/fileUpload');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -290,10 +288,7 @@ router.post('/hiring-requirements', auth(), async (req, res) => {
  */
 router.get('/student-pool', auth(), async (req, res) => {
   try {
-    console.log('=== /student-pool endpoint called ===');
-    
     if (req.user.type !== 'organization') {
-      console.log('Access denied: user type is', req.user.type);
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -302,12 +297,9 @@ router.get('/student-pool', auth(), async (req, res) => {
 
     const { page = 1, limit = 20 } = req.query;
     
-    console.log('Fetching student pool with params:', { page, limit });
-
     // Simple query: Get all learners with basic info
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
-    console.log('Finding learners...');
     const students = await User.find({ role: 'learner' })
       .select('_id name email learnerProfile')
       .skip(skip)
@@ -315,8 +307,6 @@ router.get('/student-pool', auth(), async (req, res) => {
       .lean()
       .exec();
     
-    console.log(`✅ Found ${students.length} students`);
-
     // Fetch certificates for these students
     const studentIds = students.map(s => s._id);
     const certificates = await Certificate.find({ 
@@ -369,7 +359,7 @@ router.get('/student-pool', auth(), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Get student pool error:', error);
+    logger.error('Get student pool error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch student pool',
