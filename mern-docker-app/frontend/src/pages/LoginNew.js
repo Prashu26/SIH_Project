@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../services/api';
 import 'boxicons/css/boxicons.min.css';
@@ -73,6 +73,19 @@ export default function Login() {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
+  // dynamically compute top offset so overlays never cover the site's header/navbar
+  useEffect(() => {
+    try {
+      const header = document.querySelector('header') || document.querySelector('.site-header') || document.querySelector('nav');
+      const height = header ? Math.ceil(header.getBoundingClientRect().height) : 72;
+      // unified auth offset for both login/register
+      window.__AUTH_TOP_OFFSET = `${height}px`;
+      document.documentElement.style.setProperty('--auth-top-offset', `${height}px`);
+    } catch (e) {
+      // ignore if DOM not available
+    }
+  }, []);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#121212] p-5 font-sans">
       <style>{`
@@ -84,248 +97,62 @@ export default function Login() {
           overflow: hidden;
           width: 900px;
           max-width: 100%;
-          min-height: 550px;
+          min-height: 580px;
           color: #ffffff;
+          /* Keep the whole container below the navbar so overlays don't cover it */
+          margin-top: 72px;
         }
 
-        .form-container {
-          position: absolute;
-          top: 0;
-          height: 100%;
-          transition: all 0.6s ease-in-out;
-        }
+        .form-container { position: absolute; top: 0; height: 100%; transition: all 0.6s ease-in-out; }
+        .student-container { left: 0; width: 50%; z-index: 2; }
+        .institution-container { left: 0; width: 50%; opacity: 0; z-index: 1; }
+        .container-custom.right-panel-active .student-container { transform: translateX(100%); }
+        .container-custom.right-panel-active .institution-container { transform: translateX(100%); opacity: 1; z-index: 5; }
 
-        .student-container {
-          left: 0;
-          width: 50%;
-          z-index: 2;
-        }
+        .form-custom { background: #181818; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 0 40px; height: 100%; text-align: center; }
+        .user-type { font-size: 14px; color: #1DB954; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .icon { font-size: 48px; margin-bottom: 15px; color: #1DB954; }
 
-        .institution-container {
-          left: 0;
-          width: 50%;
-          opacity: 0;
-          z-index: 1;
-        }
+        .input-custom { background: #282828; border: 1px solid transparent; padding: 15px; margin: 8px 0; width: 100%; border-radius: 30px; font-size: 14px; outline: none; transition: all 0.3s ease; color: #ffffff; }
+        .input-custom:focus { background: #333333; border-color: #1DB954; transform: translateY(-2px); }
+        .input-custom::placeholder { color: #b3b3b3; }
 
-        .container-custom.right-panel-active .student-container {
-          transform: translateX(100%);
-        }
+        .btn-custom { border-radius: 30px; border: none; background: #1DB954; color: #000000; font-size: 14px; font-weight: 700; padding: 14px 50px; letter-spacing: 1px; text-transform: uppercase; transition: all 0.3s ease; cursor: pointer; margin-top: 15px; }
+        .btn-custom:hover { background: #1ed760; transform: scale(1.05); box-shadow: 0 10px 20px rgba(29, 185, 84, 0.3); }
+        .btn-ghost { background: transparent; border: 2px solid #ffffff; color: #ffffff; margin-top: 0; }
+        .btn-ghost:hover { background: #ffffff; color: #000000; }
 
-        .container-custom.right-panel-active .institution-container {
-          transform: translateX(100%);
-          opacity: 1;
-          z-index: 5;
-        }
+        .overlay-container { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; overflow: hidden; transition: transform 0.6s ease-in-out; z-index: 20; }
+        .container-custom.right-panel-active .overlay-container { transform: translateX(-100%); }
 
-        .form-custom {
-          background: #181818;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-direction: column;
-          padding: 0 50px;
-          height: 100%;
-          text-align: center;
-        }
+        .overlay { background: linear-gradient(to bottom, #1DB954, #000000); color: white; position: relative; left: -100%; height: 100%; width: 200%; transform: translateX(0); transition: transform 0.6s ease-in-out; }
+        .container-custom.right-panel-active .overlay { transform: translateX(50%); }
 
-        .user-type {
-          font-size: 14px;
-          color: #1DB954;
-          font-weight: 700;
-          margin-bottom: 20px;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
+        .overlay-panel { position: absolute; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 0 40px; text-align: center; top: 0; height: 100%; width: 50%; transform: translateX(0); transition: transform 0.6s ease-in-out; }
+        .overlay-left { transform: translateX(-20%); }
+        .container-custom.right-panel-active .overlay-left { transform: translateX(0); }
+        .overlay-right { right: 0; transform: translateX(0); }
+        .container-custom.right-panel-active .overlay-right { transform: translateX(20%); }
 
-        .icon {
-          font-size: 48px;
-          margin-bottom: 15px;
-          color: #1DB954;
-        }
+        .select-wrapper { width: 100%; position: relative; margin: 8px 0; }
+        .select-custom { background: #282828; border: none; padding: 15px; width: 100%; border-radius: 30px; font-size: 14px; outline: none; cursor: pointer; appearance: none; color: #ffffff; }
 
-        .input-custom {
-          background: #282828;
-          border: 1px solid transparent;
-          padding: 15px;
-          margin: 8px 0;
-          width: 100%;
-          border-radius: 30px;
-          font-size: 14px;
-          outline: none;
-          transition: all 0.3s ease;
-          color: #ffffff;
-        }
-
-        .input-custom:focus {
-          background: #333333;
-          border-color: #1DB954;
-          transform: translateY(-2px);
-        }
-
-        .input-custom::placeholder {
-          color: #b3b3b3;
-        }
-
-        .btn-custom {
-          border-radius: 30px;
-          border: none;
-          background: #1DB954;
-          color: #000000;
-          font-size: 14px;
-          font-weight: 700;
-          padding: 14px 50px;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          transition: all 0.3s ease;
-          cursor: pointer;
-          margin-top: 15px;
-        }
-
-        .btn-custom:hover {
-          background: #1ed760;
-          transform: scale(1.05);
-          box-shadow: 0 10px 20px rgba(29, 185, 84, 0.3);
-        }
-
-        .btn-custom:active {
-          transform: scale(0.95);
-        }
-
-        .btn-ghost {
-          background: transparent;
-          border: 2px solid #ffffff;
-          color: #ffffff;
-          margin-top: 0;
-        }
-
-        .btn-ghost:hover {
-          background: #ffffff;
-          color: #000000;
-        }
-
-        .overlay-container {
-          position: absolute;
-          top: 0;
-          left: 50%;
-          width: 50%;
-          height: 100%;
-          overflow: hidden;
-          transition: transform 0.6s ease-in-out;
-          z-index: 100;
-        }
-
-        .container-custom.right-panel-active .overlay-container {
-          transform: translateX(-100%);
-        }
-
-        .overlay {
-          background: #000000;
-          background: linear-gradient(to bottom, #1DB954, #000000);
-          background-size: cover;
-          color: white;
-          position: relative;
-          left: -100%;
-          height: 100%;
-          width: 200%;
-          transform: translateX(0);
-          transition: transform 0.6s ease-in-out;
-        }
-
-        .container-custom.right-panel-active .overlay {
-          transform: translateX(50%);
-        }
-
-        .overlay-panel {
-          position: absolute;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-direction: column;
-          padding: 0 40px;
-          text-align: center;
-          top: 0;
-          height: 100%;
-          width: 50%;
-          transform: translateX(0);
-          transition: transform 0.6s ease-in-out;
-        }
-
-        .overlay-left {
-          transform: translateX(-20%);
-        }
-
-        .container-custom.right-panel-active .overlay-left {
-          transform: translateX(0);
-        }
-
-        .overlay-right {
-          right: 0;
-          transform: translateX(0);
-        }
-
-        .container-custom.right-panel-active .overlay-right {
-          transform: translateX(20%);
-        }
-
-        .select-wrapper {
-          width: 100%;
-          position: relative;
-          margin: 8px 0;
-        }
-
-        .select-custom {
-          background: #282828;
-          border: none;
-          padding: 15px;
-          width: 100%;
-          border-radius: 30px;
-          font-size: 14px;
-          outline: none;
-          cursor: pointer;
-          appearance: none;
-          color: #ffffff;
-        }
-
-        .select-wrapper::after {
-          content: '▼';
-          position: absolute;
-          right: 15px;
-          top: 50%;
-          transform: translateY(-50%);
-          pointer-events: none;
-          color: #b3b3b3;
-          font-size: 12px;
-        }
-
-        h1 {
-          color: #ffffff !important;
-        }
-
-        a {
-          color: #b3b3b3;
-          transition: color 0.3s ease;
-        }
-        
-        a:hover {
-          color: #ffffff;
-        }
+        h1 { color: #ffffff !important; }
+        a { color: #b3b3b3; transition: color 0.3s ease; }
+        a:hover { color: #ffffff; }
 
         @media (max-width: 768px) {
-          .container-custom {
-            width: 100%;
-            min-height: 600px;
-          }
-          .form-custom {
-            padding: 0 30px;
-          }
-          .overlay-panel {
-            padding: 0 20px;
-          }
+          .container-custom { width: 100%; min-height: 640px; margin-top: 20px; }
+          .form-custom { padding: 0 30px; }
+          .overlay-panel { padding: 0 20px; }
         }
       `}</style>
 
-      <div className={`container-custom ${isRightPanelActive ? 'right-panel-active' : ''}`} id="container">
+      <div
+        className={`container-custom ${isRightPanelActive ? 'right-panel-active' : ''}`}
+        id="container"
+        style={{ marginTop: typeof window !== 'undefined' ? window.__AUTH_TOP_OFFSET || '72px' : '72px' }}
+      >
         {/* Institution Login */}
         <div className="form-container institution-container">
           <form className="form-custom" onSubmit={submit}>
