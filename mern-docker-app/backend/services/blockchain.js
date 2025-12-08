@@ -12,12 +12,12 @@ let signer;
 
 // Initialize the blockchain service
 function initBlockchainService() {
-  const rpcUrl = process.env.POLYGON_RPC_URL;
-  const privateKey = process.env.ISSUER_PRIVATE_KEY; // Should be stored in KMS in production
+  const rpcUrl = process.env.BLOCKCHAIN_PROVIDER_URL || process.env.POLYGON_RPC_URL;
+  const privateKey = process.env.PRIVATE_KEY || process.env.ISSUER_PRIVATE_KEY; // Should be stored in KMS in production
   const contractAddress = process.env.CONTRACT_ADDRESS;
 
   if (!rpcUrl || !privateKey || !contractAddress) {
-    throw new Error('Missing required environment variables for blockchain service');
+    throw new Error('Missing required environment variables for blockchain service: BLOCKCHAIN_PROVIDER_URL/POLYGON_RPC_URL, PRIVATE_KEY/ISSUER_PRIVATE_KEY, CONTRACT_ADDRESS');
   }
 
   try {

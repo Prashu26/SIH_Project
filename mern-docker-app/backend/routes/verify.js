@@ -3,7 +3,9 @@ const crypto = require('crypto');
 const multer = require('multer');
 
 const Certificate = require('../models/Certificate');
+const CertificateService = require('../services/certificateService');
 const BlockchainService = require('../services/blockchainService');
+const blockchainService = new BlockchainService();
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -86,24 +88,42 @@ router.get('/:certificateId', async (req, res) => {
     console.log('🔗 Certificate has blockchain anchoring, attempting full verification...');
     
     try {
-      const result = await BlockchainService.verifyCertificate(certificateId);
+      const docHash = certificate.pdfHash || certificate.sha256;
+      const result = await blockchainService.verifyDocument(
+        docHash,
+        certificate.merkleProof,
+        certificate.merkleRoot,
+        certificate.batchId
+      );
       
-      const statusCode = result.isValid ? 200 : 400;
+      const statusCode = result.valid ? 200 : 400;
       
       return res.status(statusCode).json({
-        success: result.isValid,
-        status: result.status,
-        message: result.message,
+        success: result.valid,
+        status: result.valid ? 'Valid' : 'Invalid',
+        message: result.reason || 'Certificate is valid',
         certificate: {
-          certificateId: result.certificate?.certificateId,
-          learner: result.certificate?.learner,
-          course: result.certificate?.course,
-          institute: result.certificate?.institute,
-          issueDate: result.certificate?.issueDate,
-          validUntil: result.certificate?.validUntil,
-          status: result.certificate?.status,
-          ncvqLevel: result.certificate?.ncvqLevel,
-          ncvqQualificationTitle: result.certificate?.ncvqQualificationTitle
+          certificateId: certificate.certificateId,
+          learner: certificate.learner,
+          course: certificate.course,
+          institute: certificate.institute,
+          issueDate: certificate.issueDate,
+          validUntil: certificate.validUntil,
+          status: certificate.status,
+          ncvqLevel: certificate.ncvqLevel,
+          ncvqQualificationTitle: certificate.ncvqQualificationTitle,
+          // Extended Details
+          fatherName: certificate.fatherName,
+          motherName: certificate.motherName,
+          dob: certificate.dob,
+          address: certificate.address,
+          district: certificate.district,
+          state: certificate.state,
+          trade: certificate.trade,
+          duration: certificate.duration,
+          session: certificate.session,
+          testMonth: certificate.testMonth,
+          testYear: certificate.testYear
         },
         blockchain: {
           verified: result.isValid,
@@ -131,7 +151,19 @@ router.get('/:certificateId', async (req, res) => {
           validUntil: certificate.validUntil,
           status: certificate.status,
           ncvqLevel: certificate.ncvqLevel,
-          ncvqQualificationTitle: certificate.ncvqQualificationTitle
+          ncvqQualificationTitle: certificate.ncvqQualificationTitle,
+          // Extended Details
+          fatherName: certificate.fatherName,
+          motherName: certificate.motherName,
+          dob: certificate.dob,
+          address: certificate.address,
+          district: certificate.district,
+          state: certificate.state,
+          trade: certificate.trade,
+          duration: certificate.duration,
+          session: certificate.session,
+          testMonth: certificate.testMonth,
+          testYear: certificate.testYear
         },
         blockchain: {
           verified: false,
@@ -218,7 +250,7 @@ router.post('/hash', async (req, res) => {
     }
     
     // Use certificate's stored proof
-    const result = await BlockchainService.verifyCertificate(certificate.certificateId);
+    const result = await CertificateService.verifyCertificate(certificate._id);
     
     return res.json({
       success: result.isValid,
@@ -232,7 +264,9 @@ router.post('/hash', async (req, res) => {
       },
       blockchain: {
         verified: result.isValid,
-        localVerification: result.localVerification,
+        localVerification: result.blockchain?.localVerification,
+        onChainVerification: result.blockchain?.onChainVerification,
+        onChainRoot: result.blockchain?.onChainRoot,
         merkleRoot: certificate.merkleRoot,
         batchId: certificate.batchId,
         blockchainTxHash: certificate.blockchainTxHash
@@ -291,7 +325,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     }
 
     // Verify the certificate
-    const result = await BlockchainService.verifyCertificate(certificate.certificateId);
+    const result = await CertificateService.verifyCertificate(certificate._id);
 
     return res.json({
       success: result.isValid,
@@ -308,11 +342,12 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       },
       blockchain: {
         verified: result.isValid,
-        localVerification: result.localVerification,
+        localVerification: result.blockchain?.localVerification,
+        onChainVerification: result.blockchain?.onChainVerification,
+        onChainRoot: result.blockchain?.onChainRoot,
         merkleRoot: certificate.merkleRoot,
         batchId: certificate.batchId,
-        blockchainTxHash: certificate.blockchainTxHash,
-        onChainRoot: result.onChainRoot
+        blockchainTxHash: certificate.blockchainTxHash
       },
       fileHash: formattedHash
     });
@@ -378,6 +413,66 @@ router.get('/batch/:batchId', async (req, res) => {
       success: false,
       message: error.message || 'Batch lookup failed'
     });
+  }
+});
+
+/**
+ * POST /api/verify/file
+ * Verify uploaded PDF and Proof file
+ */
+router.post('/file', upload.fields([{ name: 'pdf', maxCount: 1 }, { name: 'proof', maxCount: 1 }]), async (req, res) => {
+  try {
+    if (!req.files || !req.files.pdf || !req.files.proof) {
+      return res.status(400).json({ success: false, message: 'Please upload both PDF and Proof file (JSON)' });
+    }
+
+    const pdfBuffer = req.files.pdf[0].buffer;
+    const proofBuffer = req.files.proof[0].buffer;
+    
+    let proofData;
+    try {
+      proofData = JSON.parse(proofBuffer.toString());
+    } catch (e) {
+      return res.status(400).json({ success: false, message: 'Invalid Proof file format (must be JSON)' });
+    }
+
+    // 1. Calculate PDF Hash
+    const calculatedHash = BlockchainService.calculateHash(pdfBuffer);
+    
+    // 2. Compare with Proof Hash
+    if (calculatedHash !== proofData.hash) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Document integrity check failed. The PDF does not match the proof.',
+        details: { calculated: calculatedHash, expected: proofData.hash }
+      });
+    }
+
+    // 3. Verify against Blockchain
+    const result = await blockchainService.verifyDocument(
+      proofData.hash,
+      proofData.merkleProof,
+      proofData.merkleRoot,
+      proofData.batchId
+    );
+
+    if (!result.valid) {
+      return res.status(400).json({ success: false, message: result.reason });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Document is valid and authentic.',
+      details: {
+        issuedAt: proofData.issuedAt,
+        issuer: proofData.issuer,
+        txHash: proofData.txHash
+      }
+    });
+
+  } catch (error) {
+    logger.error('File verification failed:', error);
+    return res.status(500).json({ success: false, message: 'Verification failed', error: error.message });
   }
 });
 

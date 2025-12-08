@@ -1,6 +1,4 @@
-learnerEmail,studentUniqueCode,courseName,courseCode,skills,validUntil
-emma.learner@example.com,EMMA-003,Full Stack Development,C1001,"HTML,CSS",2026-06-30
-liam.learner@example.com,LIAM-004,Machine Learning Foundations,C1002,"Python,Model Tuning",2026-07-15
-sophia.learner@example.com,SOPH-005,Cloud Computing Specialist,C1003,"AWS,Virtualization",2026-08-10
-noah.learner@example.com,NOAH-006,Cybersecurity Operations,C1004,"Network Security,Threat Hunting",2026-09-05
+learnerEmail,studentUniqueCode,courseName,courseCode,skills,validUntil,fatherName,motherName,dob,address,district,state,trade,duration,session,testMonth,testYear,nsqfLevel
+emma.learner@example.com,EMMA-003,Full Stack Development,C1001,"HTML,CSS",2026-06-30,John Doe,Jane Doe,2000-01-01,123 Main St,Central,Delhi,Computer Science,6 Months,2025-2026,June,2026,Level 5
+liam.learner@example.com,LIAM-004,Machine Learning Foundations,C1002,"Python,Model Tuning",2026-07-15,Robert Smith,Mary Smith,1999-05-15,456 Oak Ave,South,Mumbai,Data Science,1 Year,2025-2026,July,2026,Level 6
 ava.learner@example.com,AVA-007,UI/UX Design Essentials,C1005,"Wireframing,Prototyping",2026-10-01

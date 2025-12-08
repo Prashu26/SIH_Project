@@ -48,8 +48,20 @@ export default function IssuerDashboard() {
     courseName: "",
     skillsAcquired: "",
     validUntil: "",
-    ncvqLevel: "",
+    nsqfLevel: "",
     ncvqQualificationCode: "",
+    // New Fields
+    fatherName: "",
+    motherName: "",
+    dob: "",
+    address: "",
+    district: "",
+    state: "",
+    trade: "",
+    duration: "",
+    session: "",
+    testMonth: "",
+    testYear: "",
   });
 
   const [courseForm, setCourseForm] = useState({
@@ -265,8 +277,19 @@ export default function IssuerDashboard() {
           courseName: "",
           skillsAcquired: "",
           validUntil: "",
-          ncvqLevel: "",
+          nsqfLevel: "",
           ncvqQualificationCode: "",
+          fatherName: "",
+          motherName: "",
+          dob: "",
+          address: "",
+          district: "",
+          state: "",
+          trade: "",
+          duration: "",
+          session: "",
+          testMonth: "",
+          testYear: "",
         });
         setCertFile(null);
         loadDashboard();
@@ -356,7 +379,7 @@ export default function IssuerDashboard() {
     if (typeof window === "undefined" || !window.ethereum) {
       setAnchorStatus({
         type: "error",
-        message: "MetaMask not detected. Install the extension and try again.",
+        message: "Wallet not detected. Install Rabby or MetaMask and try again.",
       });
       return;
     }
@@ -374,13 +397,13 @@ export default function IssuerDashboard() {
       setChainId(currentChainId);
       setAnchorStatus({
         type: "success",
-        message: "MetaMask connected successfully.",
+        message: "Wallet connected successfully.",
       });
     } catch (error) {
-      console.error("MetaMask connect error:", error);
+      console.error("Wallet connect error:", error);
       setAnchorStatus({
         type: "error",
-        message: error?.message || "Failed to connect MetaMask.",
+        message: error?.message || "Failed to connect Wallet.",
       });
     }
   }, []);
@@ -400,7 +423,7 @@ export default function IssuerDashboard() {
     if (typeof window === "undefined" || !window.ethereum) {
       setAnchorStatus({
         type: "error",
-        message: "MetaMask not detected. Install the extension and try again.",
+        message: "Wallet not detected. Install Rabby or MetaMask and try again.",
       });
       return;
     }
@@ -415,10 +438,10 @@ export default function IssuerDashboard() {
         setMetamaskAccount(account);
       }
     } catch (error) {
-      console.error("MetaMask account request error:", error);
+      console.error("Wallet account request error:", error);
       setAnchorStatus({
         type: "error",
-        message: error?.message || "MetaMask account access denied.",
+        message: error?.message || "Wallet account access denied.",
       });
       return;
     }
@@ -426,7 +449,7 @@ export default function IssuerDashboard() {
     if (!account) {
       setAnchorStatus({
         type: "error",
-        message: "No MetaMask account available. Please connect MetaMask.",
+        message: "No Wallet account available. Please connect your Wallet.",
       });
       return;
     }
@@ -456,11 +479,18 @@ export default function IssuerDashboard() {
       return;
     }
 
+    // Construct transaction data for setMerkleRoot(bytes32)
+    // Selector: 0x7cb64759
+    const functionSelector = "0x7cb64759";
+    const hashData = normalizedHash.slice(2);
+    const paddedHash = hashData.padStart(64, '0');
+    const txData = functionSelector + paddedHash;
+
     const txParams = {
       from: account,
       to: targetAddress,
       value: "0x0",
-      data: normalizedHash,
+      data: txData,
     };
 
     setIsAnchoring(true);
@@ -984,6 +1014,109 @@ export default function IssuerDashboard() {
                     />
                   </div>
 
+                  {/* Personal Details */}
+                  <div>
+                    <label className="block text-gray-300 mb-2">Father's Name</label>
+                    <input
+                      type="text"
+                      value={singleCertForm.fatherName}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, fatherName: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-300 mb-2">Mother's Name</label>
+                    <input
+                      type="text"
+                      value={singleCertForm.motherName}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, motherName: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-300 mb-2">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={singleCertForm.dob}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, dob: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-300 mb-2">Address</label>
+                    <input
+                      type="text"
+                      value={singleCertForm.address}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, address: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-300 mb-2">District</label>
+                    <input
+                      type="text"
+                      value={singleCertForm.district}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, district: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-300 mb-2">State</label>
+                    <input
+                      type="text"
+                      value={singleCertForm.state}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, state: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+
+                  {/* Course Details */}
+                  <div>
+                    <label className="block text-gray-300 mb-2">Trade</label>
+                    <input
+                      type="text"
+                      value={singleCertForm.trade}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, trade: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-300 mb-2">Duration</label>
+                    <input
+                      type="text"
+                      value={singleCertForm.duration}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, duration: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-300 mb-2">Session</label>
+                    <input
+                      type="text"
+                      value={singleCertForm.session}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, session: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-300 mb-2">Test Month</label>
+                    <input
+                      type="text"
+                      value={singleCertForm.testMonth}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, testMonth: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-300 mb-2">Test Year</label>
+                    <input
+                      type="text"
+                      value={singleCertForm.testYear}
+                      onChange={(e) => setSingleCertForm({ ...singleCertForm, testYear: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-gray-300 mb-2">
                       Select Course
@@ -1043,15 +1176,15 @@ export default function IssuerDashboard() {
 
                   <div>
                     <label className="block text-gray-300 mb-2">
-                      NCVQ Level
+                      NSQF Level
                     </label>
                     <input
                       type="text"
-                      value={singleCertForm.ncvqLevel}
+                      value={singleCertForm.nsqfLevel}
                       onChange={(e) =>
                         setSingleCertForm({
                           ...singleCertForm,
-                          ncvqLevel: e.target.value,
+                          nsqfLevel: e.target.value,
                         })
                       }
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
@@ -1649,7 +1782,7 @@ export default function IssuerDashboard() {
               <div className="grid gap-6 mb-8 md:grid-cols-2">
                 <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-6">
                   <h3 className="text-xl font-bold text-white mb-4">
-                    MetaMask Status
+                    Wallet Status
                   </h3>
                   <p className="text-gray-300 mb-2">
                     <span className="text-gray-400">Account:</span>{" "}
@@ -1664,10 +1797,10 @@ export default function IssuerDashboard() {
                     onClick={connectMetamask}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
                   >
-                    <i className="bx bxl-metamask text-lg"></i>
+                    <i className="bx bx-wallet text-lg"></i>
                     {metamaskAccount
-                      ? "Reconnect MetaMask"
-                      : "Connect MetaMask"}
+                      ? "Reconnect Wallet"
+                      : "Connect Wallet"}
                   </button>
                 </div>
 

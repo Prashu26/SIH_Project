@@ -8,11 +8,13 @@
     "node": "hardhat node --hostname 0.0.0.0 --port 8545"
   },
   "devDependencies": {
-    "hardhat": "^2.18.0",
-    "@nomicfoundation/hardhat-toolbox": "^3.0.0"
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "hardhat": "^2.18.0"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "dotenv": "^16.0.3",
-    "ethers": "^6.14.0"
+    "ethers": "^6.14.0",
+    "pdf-lib": "^1.17.1"
   }
 }

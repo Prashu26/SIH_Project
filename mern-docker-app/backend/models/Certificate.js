@@ -25,7 +25,21 @@ const CertificateSchema = new mongoose.Schema(
     issue_date: { type: Date }, // Legacy field
     validUntil: { type: Date },
     
+    // Extended Certificate Details (Padhega India Style)
+    fatherName: { type: String },
+    motherName: { type: String },
+    dob: { type: String },
+    address: { type: String },
+    district: { type: String },
+    state: { type: String },
+    trade: { type: String },
+    duration: { type: String },
+    session: { type: String },
+    testMonth: { type: String },
+    testYear: { type: String },
+    
     // NCVQ / Qualification details
+    nsqfLevel: { type: String },
     ncvqLevel: { type: String },
     ncvqQualificationCode: { type: String },
     ncvqQualificationTitle: { type: String },
@@ -48,6 +62,8 @@ const CertificateSchema = new mongoose.Schema(
     batchId: { type: String, index: true },
     
     // Hashes & verification
+    pdfHash: { type: String, index: true }, // SHA-256 hash of the PDF file
+    metadataHash: { type: String, index: true }, // SHA-256 hash of the metadata (legacy)
     metadataHash: { type: String, required: true, index: true },
     artifactHash: { type: String },
     sha256: { type: String, index: true }, // Legacy field

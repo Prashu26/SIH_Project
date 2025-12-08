@@ -85,47 +85,47 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12">
+    <div className="min-h-screen flex items-center justify-center py-12 bg-[#121212]">
       <div className="w-full max-w-md">
-        <div className="bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-8">
+        <div className="bg-[#181818] border border-[#282828] rounded-2xl p-8 shadow-2xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="bg-gradient-to-r from-blue-400 to-purple-500 p-3 rounded-xl w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <i className="bx bx-user-plus text-white text-2xl"></i>
+            <div className="bg-[#1DB954] p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-[0_0_20px_rgba(29,185,84,0.3)]">
+              <i className="bx bx-user-plus text-black text-3xl"></i>
             </div>
             <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
-            <p className="text-gray-300">Join the blockchain credentialing revolution</p>
+            <p className="text-[#b3b3b3]">Join the blockchain credentialing revolution</p>
           </div>
 
           {/* Form */}
           <form onSubmit={submit} className="space-y-6">
             {/* Role Selection */}
             <div>
-              <label className="block text-gray-300 mb-3 font-medium">I am a</label>
+              <label className="block text-[#b3b3b3] mb-3 font-medium text-sm uppercase tracking-wider">I am a</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setRole('learner')}
-                  className={`p-4 rounded-lg border-2 transition-all duration-300 ${
+                  className={`p-4 rounded-full border-2 transition-all duration-300 ${
                     role === 'learner'
-                      ? 'border-blue-500 bg-blue-600/20 text-white'
-                      : 'border-gray-600 bg-gray-700/30 text-gray-300 hover:border-gray-500'
+                      ? 'border-[#1DB954] bg-[#1DB954]/10 text-white'
+                      : 'border-[#282828] bg-[#282828] text-[#b3b3b3] hover:border-[#1DB954] hover:text-white'
                   }`}
                 >
                   <i className="bx bx-user block text-2xl mb-2"></i>
-                  <span className="font-medium">Learner</span>
+                  <span className="font-bold">Learner</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setRole('institute')}
-                  className={`p-4 rounded-lg border-2 transition-all duration-300 ${
+                  className={`p-4 rounded-full border-2 transition-all duration-300 ${
                     role === 'institute'
-                      ? 'border-purple-500 bg-purple-600/20 text-white'
-                      : 'border-gray-600 bg-gray-700/30 text-gray-300 hover:border-gray-500'
+                      ? 'border-[#1DB954] bg-[#1DB954]/10 text-white'
+                      : 'border-[#282828] bg-[#282828] text-[#b3b3b3] hover:border-[#1DB954] hover:text-white'
                   }`}
                 >
                   <i className="bx bx-buildings block text-2xl mb-2"></i>
-                  <span className="font-medium">Institution</span>
+                  <span className="font-bold">Institution</span>
                 </button>
               </div>
             </div>
@@ -135,62 +135,62 @@ export default function Register() {
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-gray-300 mb-2 font-medium">First Name</label>
+                    <label className="block text-white mb-2 font-bold text-sm">First Name</label>
                     <input
                       value={form.firstName}
                       onChange={onChange('firstName')}
-                      className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
+                      className="w-full bg-[#282828] border border-transparent rounded-full px-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
                       placeholder="John"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-2 font-medium">Last Name</label>
+                    <label className="block text-white mb-2 font-bold text-sm">Last Name</label>
                     <input
                       value={form.lastName}
                       onChange={onChange('lastName')}
-                      className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
+                      className="w-full bg-[#282828] border border-transparent rounded-full px-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
                       placeholder="Doe"
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">Email Address</label>
+                  <label className="block text-white mb-2 font-bold text-sm">Email Address</label>
                   <div className="relative">
-                    <i className="bx bx-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i className="bx bx-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
                     <input
                       type="email"
                       value={form.email}
                       onChange={onChange('email')}
-                      className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
+                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
                       placeholder="john@example.com"
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">Password</label>
+                  <label className="block text-white mb-2 font-bold text-sm">Password</label>
                   <div className="relative">
-                    <i className="bx bx-lock-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i className="bx bx-lock-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
                     <input
                       type="password"
                       value={form.password}
                       onChange={onChange('password')}
-                      className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
+                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
                       placeholder="Create a strong password"
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">Learner ID</label>
+                  <label className="block text-white mb-2 font-bold text-sm">Learner ID</label>
                   <div className="relative">
-                    <i className="bx bx-id-card absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i className="bx bx-id-card absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
                     <input
                       value={form.learnerId}
                       onChange={onChange('learnerId')}
-                      className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
+                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
                       placeholder="e.g. LRN-2025-001"
                       required
                     />
@@ -200,54 +200,54 @@ export default function Register() {
             ) : (
               <>
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">Institution Name</label>
+                  <label className="block text-white mb-2 font-bold text-sm">Institution Name</label>
                   <div className="relative">
-                    <i className="bx bx-buildings absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i className="bx bx-buildings absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
                     <input
                       value={form.name}
                       onChange={onChange('name')}
-                      className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors"
+                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
                       placeholder="Future Skills Academy"
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">Institution Email</label>
+                  <label className="block text-white mb-2 font-bold text-sm">Institution Email</label>
                   <div className="relative">
-                    <i className="bx bx-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i className="bx bx-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
                     <input
                       type="email"
                       value={form.email}
                       onChange={onChange('email')}
-                      className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors"
+                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
                       placeholder="admin@academy.com"
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">Password</label>
+                  <label className="block text-white mb-2 font-bold text-sm">Password</label>
                   <div className="relative">
-                    <i className="bx bx-lock-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i className="bx bx-lock-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
                     <input
                       type="password"
                       value={form.password}
                       onChange={onChange('password')}
-                      className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors"
+                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
                       placeholder="Create a strong password"
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">Registration ID <span className="text-gray-500">(Optional)</span></label>
+                  <label className="block text-white mb-2 font-bold text-sm">Registration ID <span className="text-[#b3b3b3] font-normal">(Optional)</span></label>
                   <div className="relative">
-                    <i className="bx bx-id-card absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i className="bx bx-id-card absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
                     <input
                       value={form.registrationId}
                       onChange={onChange('registrationId')}
-                      className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors"
+                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
                       placeholder="INST-2025-001"
                     />
                   </div>
@@ -273,11 +273,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`w-full ${
-                role === 'learner'
-                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-blue-500/25'
-                  : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-purple-500/25'
-              } disabled:from-gray-600 disabled:to-gray-600 text-white py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg flex items-center justify-center gap-3`}
+              className="w-full bg-[#1DB954] hover:bg-[#1ed760] hover:scale-105 disabled:bg-[#282828] disabled:text-[#b3b3b3] text-black py-3 rounded-full font-bold uppercase tracking-widest transition-all duration-300 shadow-lg flex items-center justify-center gap-3"
             >
               {isSubmitting ? (
                 <>
@@ -294,10 +290,10 @@ export default function Register() {
           </form>
 
           {/* Footer */}
-          <div className="text-center mt-8 pt-6 border-t border-gray-700">
-            <p className="text-gray-400">
+          <div className="text-center mt-8 pt-6 border-t border-[#282828]">
+            <p className="text-[#b3b3b3]">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+              <Link to="/login" className="text-white hover:text-[#1DB954] transition-colors font-bold hover:underline">
                 Sign in here
               </Link>
             </p>

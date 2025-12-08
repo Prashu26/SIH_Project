@@ -147,6 +147,10 @@ async function ensureLearnerAccount({
       if (!clash) {
         learner.learnerProfile.learnerId = trimmedCandidate;
         needsSave = true;
+      } else {
+        console.warn(
+          `Cannot assign learnerId "${trimmedCandidate}" - already in use by another user`
+        );
       }
     }
 
@@ -162,7 +166,20 @@ async function ensureLearnerAccount({
     }
 
     if (needsSave) {
-      await learner.save();
+      try {
+        await learner.save();
+      } catch (saveErr) {
+        if (saveErr.code === 11000) {
+          console.error(
+            `Duplicate key error saving learner: ${saveErr.message}`
+          );
+          // If we hit a duplicate, generate a new unique ID and retry
+          learner.learnerProfile.learnerId = await generateUniqueLearnerId();
+          await learner.save();
+        } else {
+          throw saveErr;
+        }
+      }
     }
   }
 
@@ -389,6 +406,19 @@ router.post(
         validUntil,
         ncvqLevel,
         ncvqQualificationCode,
+        // New Fields
+        fatherName,
+        motherName,
+        dob,
+        address,
+        district,
+        state,
+        trade,
+        duration,
+        session,
+        testMonth,
+        testYear,
+        nsqfLevel,
       } = req.body;
 
       // Accept alternate names used by older clients

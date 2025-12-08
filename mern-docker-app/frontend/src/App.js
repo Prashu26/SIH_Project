@@ -4,7 +4,7 @@ import './App.css';
 import Header from './components/header';
 import Hero from './components/Hero';
 import Home from './pages/Home';
-import Login from './pages/Login';
+import Login from './pages/LoginNew';
 import Register from './pages/Register';
 import Verify from './pages/Verify';
 import LearnerDashboard from './pages/LearnerDashboard';

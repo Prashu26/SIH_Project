@@ -7,7 +7,7 @@ const morgan = require('morgan');
 require('dotenv').config();
 
 const logger = require('./utils/logger');
-const { initBlockchainService } = require('./services/blockchain');
+// const { initBlockchainService } = require('./services/blockchain');
 const { initIPFS } = require('./services/ipfs');
 const { seedDemoUsers } = require('./scripts/seedDemoUsers');
 const { seedLearnerBatch } = require('./scripts/seedLearnerBatch');
@@ -46,11 +46,13 @@ db.once('open', async () => {
 // Initialize services. Make blockchain optional in dev (don't exit on missing env vars)
 (async () => {
   try {
+    /*
     try {
       initBlockchainService();
     } catch (err) {
       logger.warn('Blockchain not configured, continuing without on-chain anchoring');
     }
+    */
 
     if (process.env.USE_IPFS === 'true') {
       // initIPFS is async (uses dynamic import). Initialize but don't block startup.

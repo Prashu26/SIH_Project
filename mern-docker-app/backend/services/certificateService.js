@@ -3,7 +3,9 @@ const PDFDocument = require("pdfkit");
 const QRCode = require("qrcode");
 const Certificate = require("../models/Certificate");
 const BlockchainService = require("./blockchainService");
+const blockchainService = new BlockchainService();
 const storageService = require("./storageService");
+const { generateCertificatePDF } = require("./pdfGenerator");
 const {
   canonicalizeCertificate,
   canonicalStringify,
@@ -33,6 +35,19 @@ class CertificateService {
         ncvqQualificationTitle,
         ncvqQualificationType,
         status = "Issued",
+        // New Fields
+        fatherName,
+        motherName,
+        dob,
+        address,
+        district,
+        state,
+        trade,
+        duration,
+        session,
+        testMonth,
+        testYear,
+        nsqfLevel,
       } = certificateData;
 
       console.log("issueCertificate called with:", {
@@ -75,6 +90,18 @@ class CertificateService {
         ncvqQualificationCode,
         ncvqQualificationTitle,
         ncvqQualificationType,
+        fatherName,
+        motherName,
+        dob,
+        address,
+        district,
+        state,
+        trade,
+        duration,
+        session,
+        testMonth,
+        testYear,
+        nsqfLevel,
       });
 
       const metadataHash = canonicalHash.startsWith("0x")
@@ -96,6 +123,18 @@ class CertificateService {
           ncvqQualificationTitle,
           ncvqQualificationType,
           canonicalHash: metadataHash,
+          fatherName,
+          motherName,
+          dob,
+          address,
+          district,
+          state,
+          trade,
+          duration,
+          session,
+          testMonth,
+          testYear,
+          nsqfLevel,
         });
 
       // Generate QR code data
@@ -118,6 +157,18 @@ class CertificateService {
         ncvqQualificationCode,
         ncvqQualificationTitle,
         ncvqQualificationType,
+        fatherName,
+        motherName,
+        dob,
+        address,
+        district,
+        state,
+        trade,
+        duration,
+        session,
+        testMonth,
+        testYear,
+        nsqfLevel,
         storage: {
           canonical: {
             hash: metadataHash,
@@ -142,6 +193,18 @@ class CertificateService {
         course,
         metadata: metadataDoc,
         canonicalHash: metadataHash,
+        fatherName,
+        motherName,
+        dob,
+        address,
+        district,
+        state,
+        trade,
+        duration,
+        session,
+        testMonth,
+        testYear,
+        nsqfLevel,
       });
 
       const artifactHash = fileArtifacts.pdfHash.startsWith("0x")
@@ -305,38 +368,38 @@ class CertificateService {
       console.log(
         `🔗 Anchoring batch of ${metadataHashes.length} certificates to blockchain...`
       );
-      const anchorResult = await BlockchainService.anchorBatch(metadataHashes);
+      const anchorResult = await blockchainService.anchorDocuments(metadataHashes);
 
-      if (anchorResult && anchorResult.success && anchorResult.txHash) {
+      if (anchorResult && anchorResult.txHash) {
         console.log(`✅ Batch anchored successfully: ${anchorResult.txHash}`);
-        console.log(`  - Merkle Root: ${anchorResult.merkleRoot}`);
+        console.log(`  - Merkle Root: ${anchorResult.root}`);
         console.log(`  - Batch ID: ${anchorResult.batchId}`);
 
         results.blockchainAnchoring = {
           success: true,
           txHash: anchorResult.txHash,
-          merkleRoot: anchorResult.merkleRoot,
+          merkleRoot: anchorResult.root,
           batchId: anchorResult.batchId,
-          gasUsed: anchorResult.gasUsed,
         };
-        results.merkleRoot = anchorResult.merkleRoot;
+        results.merkleRoot = anchorResult.root;
         results.batchId = anchorResult.batchId;
 
         for (let i = 0; i < createdCertificates.length; i++) {
           const cert = createdCertificates[i];
-          const proofData = anchorResult.proofs[i];
+          const hash = metadataHashes[i];
+          const proof = anchorResult.proofs[hash];
 
           try {
             cert.blockchainTxHash = anchorResult.txHash;
-            cert.merkleRoot = anchorResult.merkleRoot;
-            cert.merkleProof = proofData.merkleProof;
+            cert.merkleRoot = anchorResult.root;
+            cert.merkleProof = proof;
             cert.batchId = anchorResult.batchId;
 
             const proofJson = {
               certificateId: cert.certificateId,
               metadataHash: cert.metadataHash,
-              merkleRoot: anchorResult.merkleRoot,
-              merkleProof: proofData.merkleProof,
+              merkleRoot: anchorResult.root,
+              merkleProof: proof,
               batchId: anchorResult.batchId,
               blockchainTxHash: anchorResult.txHash,
               issuedAt: cert.issueDate.toISOString(),
@@ -503,12 +566,20 @@ class CertificateService {
       let blockchain = null;
       if (certificate.blockchainTxHash) {
         try {
-          const blockchainService = new BlockchainService();
-          const tx = await blockchainService.verifyCertificate(certificateId);
+          const docHash = certificate.pdfHash || certificate.metadataHash || certificate.sha256;
+          const tx = await blockchainService.verifyDocument(
+            docHash,
+            certificate.merkleProof,
+            certificate.merkleRoot,
+            certificate.batchId
+          );
           blockchain = {
-            verified: tx.verified,
+            verified: tx.valid,
             txHash: certificate.blockchainTxHash,
-            timestamp: tx.timestamp,
+            reason: tx.reason,
+            localVerification: tx.localVerification,
+            onChainVerification: tx.onChainVerification,
+            onChainRoot: tx.onChainRoot
           };
         } catch (error) {
           console.error("Error verifying on blockchain:", error);
@@ -637,10 +708,29 @@ class CertificateService {
       "utf-8"
     );
 
-    const pdfBuffer = await this.generatePDF({
-      ...certificateData,
-      metadata: metadataDoc,
-    });
+    // Map data for PDF generator
+    const pdfData = {
+      certificate_id: certificateData.certificateId,
+      student_name: certificateData.learnerName || certificateData.learner?.name || "Learner",
+      father_name: certificateData.fatherName,
+      mother_name: certificateData.motherName,
+      dob: certificateData.dob,
+      institute_name: certificateData.instituteName || certificateData.institute?.name || "Institute",
+      address: certificateData.address,
+      district: certificateData.district,
+      state: certificateData.state,
+      trade: certificateData.trade,
+      nsqf_level: certificateData.nsqfLevel || certificateData.ncvqLevel,
+      duration: certificateData.duration,
+      session: certificateData.session,
+      test_month: certificateData.testMonth,
+      test_year: certificateData.testYear,
+      course_name: certificateData.courseName || certificateData.course?.title || "Course",
+      issue_date: certificateData.issueDate ? new Date(certificateData.issueDate).toLocaleDateString() : new Date().toLocaleDateString(),
+    };
+
+    // Use the new PDF generator
+    const { pdfBuffer } = await generateCertificatePDF(pdfData);
 
     const pdfHash = crypto.createHash("sha256").update(pdfBuffer).digest("hex");
 

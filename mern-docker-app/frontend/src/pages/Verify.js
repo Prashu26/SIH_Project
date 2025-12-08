@@ -316,9 +316,18 @@ export default function Verify() {
 
                   <div className="mt-3 text-sm text-sky-200/80">
                     {result.message && <p className="mb-2">{result.message}</p>}
-                    <p><span className="font-semibold">Certificate ID:</span> {result.id || result.certificate?.id || '—'}</p>
-                    <p><span className="font-semibold">Issuer:</span> {result.certificate?.issuer || '—'}</p>
-                    <p><span className="font-semibold">Subject:</span> {result.certificate?.recipient || result.certificate?.subject || '—'}</p>
+                    <p><span className="font-semibold">Certificate ID:</span> {result.certificate?.certificateId || '—'}</p>
+                    <p><span className="font-semibold">Name:</span> {result.certificate?.learner?.name || result.certificate?.student_name || '—'}</p>
+                    {result.certificate?.fatherName && <p><span className="font-semibold">Father's Name:</span> {result.certificate.fatherName}</p>}
+                    {result.certificate?.motherName && <p><span className="font-semibold">Mother's Name:</span> {result.certificate.motherName}</p>}
+                    {result.certificate?.dob && <p><span className="font-semibold">DOB:</span> {result.certificate.dob}</p>}
+                    <p><span className="font-semibold">Course/Trade:</span> {result.certificate?.course?.title || result.certificate?.trade || '—'}</p>
+                    <p><span className="font-semibold">Institute:</span> {result.certificate?.institute?.name || result.certificate?.institute_name || '—'}</p>
+                    {result.certificate?.address && <p><span className="font-semibold">Address:</span> {result.certificate.address}, {result.certificate.district}, {result.certificate.state}</p>}
+                    {result.certificate?.nsqfLevel && <p><span className="font-semibold">NSQF Level:</span> {result.certificate.nsqfLevel}</p>}
+                    {result.certificate?.duration && <p><span className="font-semibold">Duration:</span> {result.certificate.duration}</p>}
+                    {result.certificate?.session && <p><span className="font-semibold">Session:</span> {result.certificate.session}</p>}
+                    {result.certificate?.testMonth && <p><span className="font-semibold">Test Period:</span> {result.certificate.testMonth} {result.certificate.testYear}</p>}
                     <p><span className="font-semibold">Anchored on Chain:</span> {result.blockchain?.verified ? 'Yes' : 'No'}</p>
                     {result.certificate?.fileHash && <p className="break-all"><span className="font-semibold">File Hash:</span> {result.certificate.fileHash}</p>}
                   </div>

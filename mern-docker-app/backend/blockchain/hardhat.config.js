@@ -11,10 +11,10 @@ module.exports = {
         mnemonic: process.env.LOCAL_MNEMONIC || "test test test test test test test test test test test junk"
       }
     },
-    mumbai: {
-      url: process.env.POLYGON_RPC_URL || "https://rpc-mumbai.maticvigil.com",
+    amoy: {
+      url: process.env.POLYGON_AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 80001
+      chainId: 80002
     },
     polygon: {
       url: process.env.POLYGON_RPC_URL || "https://polygon-rpc.com",

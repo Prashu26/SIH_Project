@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const AdmZip = require('adm-zip');
 const { parse } = require('csv-parse/sync');
 const { v4: uuidv4 } = require('uuid');
 
@@ -11,7 +12,8 @@ const Institute = require('../models/Institute');
 
 const { generateCertificatePDF } = require('./pdfGenerator');
 const { uploadToIPFS } = require('./ipfs');
-const { anchorBatch } = require('./blockchain');
+const BlockchainService = require('./blockchainService');
+const blockchainService = new BlockchainService();
 const logger = require('../utils/logger');
 
 const BACKEND_ROOT = path.join(__dirname, '..');
@@ -55,8 +57,20 @@ function buildTemplatePayload({ certificateId, studentRecord, institute, row }) 
   return {
     certificate_id: certificateId,
     student_name: studentName,
+    father_name: pickString(row.fatherName) || pickString(row.father_name),
+    mother_name: pickString(row.motherName) || pickString(row.mother_name),
+    dob: pickString(row.dob) || pickString(row.date_of_birth),
+    institute_name: pickString(row.instituteName) || pickString(row.institute_name) || institute.name,
+    address: pickString(row.address),
+    district: pickString(row.district),
+    state: pickString(row.state),
+    trade: pickString(row.trade) || courseName,
+    nsqf_level: pickString(row.nsqfLevel) || pickString(row.nsqf_level) || pickString(row.nsqf),
+    duration: pickString(row.duration),
+    session: pickString(row.session),
+    test_month: pickString(row.testMonth) || pickString(row.test_month),
+    test_year: pickString(row.testYear) || pickString(row.test_year),
     course_name: courseName,
-    institute_name: institute.name,
     issue_date: issueDate,
     verification_url: process.env.VERIFICATION_BASE_URL || `${process.env.API_BASE_URL || 'http://localhost:8080'}`
   };
@@ -100,7 +114,7 @@ async function handleCertificateRecord({ row, institute, batch, options }) {
 
   ensureDir(CERTIFICATE_OUTPUT_DIR);
 
-  const sha256 = crypto.createHash('sha256').update(pdfBuffer).digest('hex');
+  const sha256 = BlockchainService.calculateHash(pdfBuffer);
   const relativePdfPath = normalisePath(filePath);
 
   let ipfsCid;
@@ -119,6 +133,22 @@ async function handleCertificateRecord({ row, institute, batch, options }) {
     batch: batch._id,
     student: student._id,
     institute: institute._id,
+    
+    // New Fields
+    fatherName: templatePayload.father_name,
+    motherName: templatePayload.mother_name,
+    dob: templatePayload.dob,
+    address: templatePayload.address,
+    district: templatePayload.district,
+    state: templatePayload.state,
+    trade: templatePayload.trade,
+    duration: templatePayload.duration,
+    session: templatePayload.session,
+    testMonth: templatePayload.test_month,
+    testYear: templatePayload.test_year,
+    ncvqLevel: templatePayload.nsqf_level,
+    nsqfLevel: templatePayload.nsqf_level,
+
     meta: {
       ...row,
       certificate_id: certificateId,
@@ -129,6 +159,7 @@ async function handleCertificateRecord({ row, institute, batch, options }) {
     pdf_url: relativePdfPath,
     ipfs_cid: ipfsCid,
     sha256,
+    pdfHash: sha256,
     status: 'READY',
     storage: {
       pdf_path: relativePdfPath,
@@ -186,7 +217,28 @@ async function createBatchFromCsv({ instituteCode, csvPath, options = {} }) {
   let anchorResult = null;
   if (options.anchor !== false) {
     try {
-      anchorResult = await anchorBatch(batch.batch_id, instituteCode);
+      const hashes = processed.map(p => p.sha256);
+      anchorResult = await blockchainService.anchorDocuments(hashes);
+      
+      // Update batch
+      batch.root_hash = anchorResult.root;
+      batch.transaction_hash = anchorResult.txHash;
+      await batch.save();
+
+      // Update certificates with proofs
+      for (const certData of processed) {
+         const proof = anchorResult.proofs[certData.sha256];
+         await Certificate.findOneAndUpdate(
+             { certificate_id: certData.certificate_id },
+             { 
+                 merkleProof: proof,
+                 merkleRoot: anchorResult.root,
+                 batchId: anchorResult.batchId,
+                 blockchainTxHash: anchorResult.txHash,
+                 status: 'ISSUED'
+             }
+         );
+      }
     } catch (error) {
       logger.error('Batch %s anchoring failed: %s', batch.batch_id, error.message);
     }
@@ -229,12 +281,56 @@ async function listBatchesForInstitute(instituteCode, { limit = 20, page = 1 } =
 }
 
 async function reanchorBatch(batchId, instituteCode) {
-  return anchorBatch(batchId, instituteCode);
+  const batch = await Batch.findOne({ batch_id: batchId }).populate('certificate_ids');
+  if (!batch) throw new Error('Batch not found');
+  
+  const hashes = batch.certificate_ids.map(c => c.pdfHash || c.sha256);
+  return blockchainService.anchorDocuments(hashes);
+}
+
+async function generateProofPackage(certificateId) {
+  const certificate = await Certificate.findOne({ certificate_id: certificateId }).populate('institute');
+  if (!certificate) throw new Error('Certificate not found');
+
+  const zip = new AdmZip();
+  
+  // Add PDF
+  const pdfPath = path.join(BACKEND_ROOT, certificate.pdf_url || certificate.storage.pdf_path);
+  if (fs.existsSync(pdfPath)) {
+    zip.addLocalFile(pdfPath);
+  } else {
+    throw new Error('Certificate PDF file not found');
+  }
+
+  // Add Proof JSON
+  const proofData = {
+    version: "1.0",
+    certificateId: certificate.certificate_id,
+    hash: certificate.pdfHash || certificate.sha256,
+    merkleRoot: certificate.merkleRoot,
+    merkleProof: certificate.merkleProof,
+    batchId: certificate.batchId,
+    txHash: certificate.blockchainTxHash,
+    issuer: {
+      name: certificate.institute.name,
+      id: certificate.institute_code,
+      publicKey: process.env.ISSUER_PUBLIC_KEY // Assuming this env var exists or we get it from somewhere
+    },
+    issuedAt: certificate.issueDate
+  };
+
+  zip.addFile("proof.json", Buffer.from(JSON.stringify(proofData, null, 2)));
+
+  const zipPath = path.join(CERTIFICATE_OUTPUT_DIR, `${certificateId}_proof.zip`);
+  zip.writeZip(zipPath);
+  
+  return zipPath;
 }
 
 module.exports = {
   createBatchFromCsv,
   getBatchById,
   listBatchesForInstitute,
-  reanchorBatch
+  reanchorBatch,
+  generateProofPackage
 };

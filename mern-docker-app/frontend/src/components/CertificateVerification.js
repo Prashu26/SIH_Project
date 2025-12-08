@@ -248,13 +248,40 @@ const CertificateVerification = () => {
                 <div className="space-y-1 text-sm">
                   <p><strong>ID:</strong> {verificationResult.certificate.certificateId}</p>
                   {verificationResult.certificate.learner && (
-                    <p><strong>Learner:</strong> {verificationResult.certificate.learner.name}</p>
+                    <p><strong>Name:</strong> {verificationResult.certificate.learner.name}</p>
+                  )}
+                  {verificationResult.certificate.fatherName && (
+                    <p><strong>Father's Name:</strong> {verificationResult.certificate.fatherName}</p>
+                  )}
+                  {verificationResult.certificate.motherName && (
+                    <p><strong>Mother's Name:</strong> {verificationResult.certificate.motherName}</p>
+                  )}
+                  {verificationResult.certificate.dob && (
+                    <p><strong>DOB:</strong> {verificationResult.certificate.dob}</p>
                   )}
                   {verificationResult.certificate.course && (
                     <p><strong>Course:</strong> {verificationResult.certificate.course.title}</p>
                   )}
+                  {verificationResult.certificate.trade && (
+                    <p><strong>Trade:</strong> {verificationResult.certificate.trade}</p>
+                  )}
                   {verificationResult.certificate.institute && (
                     <p><strong>Institute:</strong> {verificationResult.certificate.institute.name}</p>
+                  )}
+                  {verificationResult.certificate.address && (
+                    <p><strong>Address:</strong> {verificationResult.certificate.address}, {verificationResult.certificate.district}, {verificationResult.certificate.state}</p>
+                  )}
+                  {verificationResult.certificate.nsqfLevel && (
+                    <p><strong>NSQF Level:</strong> {verificationResult.certificate.nsqfLevel}</p>
+                  )}
+                  {verificationResult.certificate.duration && (
+                    <p><strong>Duration:</strong> {verificationResult.certificate.duration}</p>
+                  )}
+                  {verificationResult.certificate.session && (
+                    <p><strong>Session:</strong> {verificationResult.certificate.session}</p>
+                  )}
+                  {verificationResult.certificate.testMonth && verificationResult.certificate.testYear && (
+                    <p><strong>Test Period:</strong> {verificationResult.certificate.testMonth} {verificationResult.certificate.testYear}</p>
                   )}
                 </div>
               </div>
