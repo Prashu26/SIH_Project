@@ -14,7 +14,7 @@ import 'boxicons/css/boxicons.min.css';
  */
 
 export default function Verify() {
-  const [query, setQuery] = useState('');
+  // credential ID lookup removed - verification uses drag & drop PDF only
   const [result, setResult] = useState(null);
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
@@ -50,30 +50,7 @@ export default function Verify() {
 
   const SCENE_URL = "https://prod.spline.design/S82vCD0u7Y-1ZAF0/scene.splinecode";
 
-  // Submit credential ID
-  const submit = async (e) => {
-    e && e.preventDefault && e.preventDefault();
-    if (!query.trim()) { setError('Enter a credential ID to verify.'); setResult(null); return; }
-    setIsLoading(true); setError(''); setResult(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/verify/${encodeURIComponent(query.trim())}`);
-      const data = await res.json();
-      if (!res.ok && res.status === 404) { setError('Certificate not found.'); setIsLoading(false); return; }
-      if (!res.ok && res.status === 202) {
-        setResult({ ...data, status: 'Not Anchored', message: 'Valid but not yet anchored' });
-        setIsLoading(false); return;
-      }
-      if (!res.ok) { setError(data.message || 'Certificate could not be verified.'); setIsLoading(false); return; }
-      setResult({
-        ...data,
-        status: data.success ? (data.status === 'Valid' ? 'Authentic' : data.status) : 'Invalid',
-        certificate: { ...data.certificate, blockchainVerified: data.blockchain?.verified || false },
-        blockchain: data.blockchain
-      });
-    } catch (err) {
-      setError(err.message || 'Unexpected error while verifying.');
-    } finally { setIsLoading(false); }
-  };
+  // credential ID submit removed - using drag & drop uploads only
 
   // Upload file handler
   const uploadFile = async (incomingEvent) => {
@@ -132,7 +109,7 @@ export default function Verify() {
   };
 
   // Clear result / error
-  const clear = () => { setResult(null); setError(''); setFile(null); setQuery(''); };
+  const clear = () => { setResult(null); setError(''); setFile(null); };
 
   // small helper to render a status badge
   const StatusBadge = ({ status }) => {
@@ -182,9 +159,6 @@ export default function Verify() {
               Verify Credentials
             </span>
           </h1>
-          <p className="text-xl text-sky-200/80 max-w-3xl mx-auto leading-relaxed">
-            Instantly verify digital certificates secured on blockchain. Enter the credential ID or upload your certificate PDF for authentication.
-          </p>
         </div>
 
         {/* Card */}
@@ -199,32 +173,7 @@ export default function Verify() {
               <h2 className="text-2xl font-semibold text-sky-100">Quick Verification</h2>
             </div>
 
-            {/* Credential form */}
-            <form onSubmit={submit} className="mb-6">
-              <label className="block text-sm text-sky-200 mb-2">Credential ID</label>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g. CERT-8F92-AK3"
-                className="w-full bg-transparent border border-slate-700 rounded-lg px-4 py-2 text-sky-50 placeholder-sky-300 focus:ring-2 focus:ring-sky-400 outline-none"
-              />
-              <div className="flex gap-3 mt-4">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 py-2 bg-gradient-to-r from-sky-300 to-indigo-300 text-sky-900 font-semibold rounded-lg shadow-sm hover:scale-105 transition-transform"
-                >
-                  {isLoading ? "Verifying…" : "Verify"}
-                </button>
-                <button
-                  type="button"
-                  onClick={clear}
-                  className="px-4 py-2 rounded-lg border border-white/10 text-sky-200 hover:bg-white/2"
-                >
-                  Clear
-                </button>
-              </div>
-            </form>
+            {/* Note: credential ID lookup removed - Drag & Drop only (auto verifies) */}
 
             {/* Drag & Drop Upload Box */}
             <div className="mb-4">
@@ -285,11 +234,6 @@ export default function Verify() {
                   <div className="vp-spark" style={{ left: '50%', top: '72%', animationDelay: '1.2s' }} />
                 </div>
 
-                {/* overlay label */}
-                <div className="absolute inset-0 rounded-xl flex flex-col items-center justify-end pb-6 text-center text-sky-100 font-medium pointer-events-none">
-                  <div className="text-sm opacity-80">Click or drop a PDF to verify</div>
-                </div>
-
                 {/* hidden file input */}
                 <input
                   ref={fileInputRef}
@@ -300,43 +244,19 @@ export default function Verify() {
                   className="hidden"
                 />
               </div>
-               <p className="text-xs text-sky-300/70 mt-3 text-center">Drop a PDF certificate here or click the box to choose a file. Verification runs automatically.</p>
+                {/* instruction removed per request (drag/drop instruction not repeated) */}
              </div>
 
             {/* Errors + Result */}
             {error && <p className="text-rose-400 mt-4">{error}</p>}
 
             {result && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-black/30 rounded-lg p-4 border border-slate-700/30">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-semibold text-sky-100">Verification Result</h4>
-                    <StatusBadge status={result.status} />
-                  </div>
-
-                  <div className="mt-3 text-sm text-sky-200/80">
-                    {result.message && <p className="mb-2">{result.message}</p>}
-                    <p><span className="font-semibold">Certificate ID:</span> {result.certificate?.certificateId || '—'}</p>
-                    <p><span className="font-semibold">Name:</span> {result.certificate?.learner?.name || result.certificate?.student_name || '—'}</p>
-                    {result.certificate?.fatherName && <p><span className="font-semibold">Father's Name:</span> {result.certificate.fatherName}</p>}
-                    {result.certificate?.motherName && <p><span className="font-semibold">Mother's Name:</span> {result.certificate.motherName}</p>}
-                    {result.certificate?.dob && <p><span className="font-semibold">DOB:</span> {result.certificate.dob}</p>}
-                    <p><span className="font-semibold">Course/Trade:</span> {result.certificate?.course?.title || result.certificate?.trade || '—'}</p>
-                    <p><span className="font-semibold">Institute:</span> {result.certificate?.institute?.name || result.certificate?.institute_name || '—'}</p>
-                    {result.certificate?.address && <p><span className="font-semibold">Address:</span> {result.certificate.address}, {result.certificate.district}, {result.certificate.state}</p>}
-                    {result.certificate?.nsqfLevel && <p><span className="font-semibold">NSQF Level:</span> {result.certificate.nsqfLevel}</p>}
-                    {result.certificate?.duration && <p><span className="font-semibold">Duration:</span> {result.certificate.duration}</p>}
-                    {result.certificate?.session && <p><span className="font-semibold">Session:</span> {result.certificate.session}</p>}
-                    {result.certificate?.testMonth && <p><span className="font-semibold">Test Period:</span> {result.certificate.testMonth} {result.certificate.testYear}</p>}
-                    <p><span className="font-semibold">Anchored on Chain:</span> {result.blockchain?.verified ? 'Yes' : 'No'}</p>
-                    {result.certificate?.fileHash && <p className="break-all"><span className="font-semibold">File Hash:</span> {result.certificate.fileHash}</p>}
-                  </div>
+              <div className="mt-6">
+                {/* Simplified result: only show valid/invalid message in template colors */}
+                <div className={`rounded-lg p-6 text-center font-semibold text-lg ${result.success ? 'bg-emerald-600/90 text-white' : 'bg-rose-600/90 text-white'}`}>
+                  {result.success ? 'Valid Certificate — This PDF is authentic' : 'Invalid Certificate — This PDF is NOT authentic'}
                 </div>
-
-                <div className="bg-black/20 rounded-lg p-4 border border-slate-700/20 max-h-72 overflow-auto">
-                  <h5 className="text-sm text-sky-100 font-semibold mb-2">Raw JSON</h5>
-                  <pre className="text-xs text-sky-100/90">{JSON.stringify(result, null, 2)}</pre>
-                </div>
+                {result.message && <p className="mt-3 text-sm text-sky-200/80 text-center">{result.message}</p>}
               </div>
             )}
 

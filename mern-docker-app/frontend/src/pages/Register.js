@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../services/api';
 import 'boxicons/css/boxicons.min.css';
 
@@ -19,16 +19,19 @@ const institutionDefaults = {
 };
 
 export default function Register() {
+  const [isRightPanelActive, setIsRightPanelActive] = useState(false);
   const [role, setRole] = useState('learner');
   const [form, setForm] = useState(learnerDefaults);
   const [feedback, setFeedback] = useState({ tone: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setForm(role === 'learner' ? learnerDefaults : institutionDefaults);
+  const handleToggleRole = (targetRole) => {
+    setRole(targetRole);
+    setForm(targetRole === 'learner' ? learnerDefaults : institutionDefaults);
+    setIsRightPanelActive(targetRole === 'institute');
     setFeedback({ tone: '', text: '' });
-  }, [role]);
+  };
 
   const submit = async (event) => {
     event.preventDefault();
@@ -53,9 +56,7 @@ export default function Register() {
         payload.name = form.name;
         payload.email = form.email.trim().toLowerCase();
         payload.password = form.password;
-        if (form.registrationId) {
-          payload.registrationId = form.registrationId;
-        }
+        if (form.registrationId) payload.registrationId = form.registrationId;
       }
 
       const { ok, data } = await apiFetch('/api/auth/register', {
@@ -71,7 +72,7 @@ export default function Register() {
       }
 
       setFeedback({ tone: 'success', text: 'Registration successful. Redirecting to login…' });
-      setTimeout(() => navigate('/login'), 2000);
+      setTimeout(() => navigate('/login'), 1400);
     } catch (error) {
       setIsSubmitting(false);
       setFeedback({ tone: 'error', text: 'Network error. Please try again.' });
@@ -84,219 +85,142 @@ export default function Register() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // dynamically compute top offset so overlays never cover the site's header/navbar
+  useEffect(() => {
+    try {
+      const header = document.querySelector('header') || document.querySelector('.site-header') || document.querySelector('nav');
+      const height = header ? Math.ceil(header.getBoundingClientRect().height) : 72;
+      // unify with login
+      window.__AUTH_TOP_OFFSET = `${height}px`;
+      document.documentElement.style.setProperty('--auth-top-offset', `${height}px`);
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 bg-[#121212]">
-      <div className="w-full max-w-md">
-        <div className="bg-[#181818] border border-[#282828] rounded-2xl p-8 shadow-2xl">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="bg-[#1DB954] p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-[0_0_20px_rgba(29,185,84,0.3)]">
-              <i className="bx bx-user-plus text-black text-3xl"></i>
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
-            <p className="text-[#b3b3b3]">Join the blockchain credentialing revolution</p>
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-[#121212] p-5 font-sans">
+      <style>{`
+        .container-custom {
+          background: #181818;
+          border-radius: 20px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+          position: relative;
+          overflow: hidden;
+          width: 900px;
+          max-width: 100%;
+          min-height: 580px;
+          color: #ffffff;
+          /* Keep the whole container below the navbar so overlays don't cover it */
+          margin-top: 72px;
+        }
 
-          {/* Form */}
-          <form onSubmit={submit} className="space-y-6">
-            {/* Role Selection */}
-            <div>
-              <label className="block text-[#b3b3b3] mb-3 font-medium text-sm uppercase tracking-wider">I am a</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRole('learner')}
-                  className={`p-4 rounded-full border-2 transition-all duration-300 ${
-                    role === 'learner'
-                      ? 'border-[#1DB954] bg-[#1DB954]/10 text-white'
-                      : 'border-[#282828] bg-[#282828] text-[#b3b3b3] hover:border-[#1DB954] hover:text-white'
-                  }`}
-                >
-                  <i className="bx bx-user block text-2xl mb-2"></i>
-                  <span className="font-bold">Learner</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('institute')}
-                  className={`p-4 rounded-full border-2 transition-all duration-300 ${
-                    role === 'institute'
-                      ? 'border-[#1DB954] bg-[#1DB954]/10 text-white'
-                      : 'border-[#282828] bg-[#282828] text-[#b3b3b3] hover:border-[#1DB954] hover:text-white'
-                  }`}
-                >
-                  <i className="bx bx-buildings block text-2xl mb-2"></i>
-                  <span className="font-bold">Institution</span>
-                </button>
-              </div>
-            </div>
+        .form-container { position: absolute; top: 0; height: 100%; transition: all 0.6s ease-in-out; }
+        .student-container { left: 0; width: 50%; z-index: 2; }
+        .institution-container { left: 0; width: 50%; opacity: 0; z-index: 1; }
+        .container-custom.right-panel-active .student-container { transform: translateX(100%); }
+        .container-custom.right-panel-active .institution-container { transform: translateX(100%); opacity: 1; z-index: 5; }
 
-            {/* Dynamic Form Fields */}
-            {role === 'learner' ? (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-white mb-2 font-bold text-sm">First Name</label>
-                    <input
-                      value={form.firstName}
-                      onChange={onChange('firstName')}
-                      className="w-full bg-[#282828] border border-transparent rounded-full px-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
-                      placeholder="John"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white mb-2 font-bold text-sm">Last Name</label>
-                    <input
-                      value={form.lastName}
-                      onChange={onChange('lastName')}
-                      className="w-full bg-[#282828] border border-transparent rounded-full px-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
-                      placeholder="Doe"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-bold text-sm">Email Address</label>
-                  <div className="relative">
-                    <i className="bx bx-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={onChange('email')}
-                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
-                      placeholder="john@example.com"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-bold text-sm">Password</label>
-                  <div className="relative">
-                    <i className="bx bx-lock-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
-                    <input
-                      type="password"
-                      value={form.password}
-                      onChange={onChange('password')}
-                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
-                      placeholder="Create a strong password"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-bold text-sm">Learner ID</label>
-                  <div className="relative">
-                    <i className="bx bx-id-card absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
-                    <input
-                      value={form.learnerId}
-                      onChange={onChange('learnerId')}
-                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
-                      placeholder="e.g. LRN-2025-001"
-                      required
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <label className="block text-white mb-2 font-bold text-sm">Institution Name</label>
-                  <div className="relative">
-                    <i className="bx bx-buildings absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
-                    <input
-                      value={form.name}
-                      onChange={onChange('name')}
-                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
-                      placeholder="Future Skills Academy"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-bold text-sm">Institution Email</label>
-                  <div className="relative">
-                    <i className="bx bx-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={onChange('email')}
-                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
-                      placeholder="admin@academy.com"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-bold text-sm">Password</label>
-                  <div className="relative">
-                    <i className="bx bx-lock-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
-                    <input
-                      type="password"
-                      value={form.password}
-                      onChange={onChange('password')}
-                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
-                      placeholder="Create a strong password"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-white mb-2 font-bold text-sm">Registration ID <span className="text-[#b3b3b3] font-normal">(Optional)</span></label>
-                  <div className="relative">
-                    <i className="bx bx-id-card absolute left-3 top-1/2 transform -translate-y-1/2 text-[#b3b3b3]"></i>
-                    <input
-                      value={form.registrationId}
-                      onChange={onChange('registrationId')}
-                      className="w-full bg-[#282828] border border-transparent rounded-full pl-10 pr-4 py-3 text-white placeholder-[#b3b3b3] focus:border-[#1DB954] focus:bg-[#333] focus:outline-none transition-colors"
-                      placeholder="INST-2025-001"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
+        .form-custom { background: #181818; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 0 40px; height: 100%; text-align: center; }
+        .user-type { font-size: 14px; color: #1DB954; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .icon { font-size: 48px; margin-bottom: 15px; color: #1DB954; }
 
-            {/* Feedback Message */}
-            {feedback.text && (
-              <div className={`rounded-lg p-4 ${
-                feedback.tone === 'error'
-                  ? 'bg-red-600/20 border border-red-500/30'
-                  : 'bg-green-600/20 border border-green-500/30'
-              }`}>
-                <div className="flex items-center gap-3">
-                  <i className={`bx ${feedback.tone === 'error' ? 'bx-error-circle text-red-400' : 'bx-check-circle text-green-400'}`}></i>
-                  <span className={feedback.tone === 'error' ? 'text-red-300' : 'text-green-300'}>{feedback.text}</span>
-                </div>
-              </div>
-            )}
+        .input-custom { background: #282828; border: 1px solid transparent; padding: 15px; margin: 8px 0; width: 100%; border-radius: 30px; font-size: 14px; outline: none; transition: all 0.3s ease; color: #ffffff; }
+        .input-custom:focus { background: #333333; border-color: #1DB954; transform: translateY(-2px); }
+        .input-custom::placeholder { color: #b3b3b3; }
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-[#1DB954] hover:bg-[#1ed760] hover:scale-105 disabled:bg-[#282828] disabled:text-[#b3b3b3] text-black py-3 rounded-full font-bold uppercase tracking-widest transition-all duration-300 shadow-lg flex items-center justify-center gap-3"
-            >
-              {isSubmitting ? (
-                <>
-                  <i className="bx bx-loader-alt animate-spin"></i>
-                  Creating Account...
-                </>
-              ) : (
-                <>
-                  <i className="bx bx-user-plus"></i>
-                  Create Account
-                </>
-              )}
-            </button>
+        .btn-custom { border-radius: 30px; border: none; background: #1DB954; color: #000000; font-size: 14px; font-weight: 700; padding: 14px 50px; letter-spacing: 1px; text-transform: uppercase; transition: all 0.3s ease; cursor: pointer; margin-top: 15px; }
+        .btn-custom:hover { background: #1ed760; transform: scale(1.05); box-shadow: 0 10px 20px rgba(29, 185, 84, 0.3); }
+        .btn-ghost { background: transparent; border: 2px solid #ffffff; color: #ffffff; margin-top: 0; }
+        .btn-ghost:hover { background: #ffffff; color: #000000; }
+
+        .overlay-container { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; overflow: hidden; transition: transform 0.6s ease-in-out; z-index: 20; }
+        .container-custom.right-panel-active .overlay-container { transform: translateX(-100%); }
+
+        .overlay { background: linear-gradient(to bottom, #1DB954, #000000); color: white; position: relative; left: -100%; height: 100%; width: 200%; transform: translateX(0); transition: transform 0.6s ease-in-out; }
+        .container-custom.right-panel-active .overlay { transform: translateX(50%); }
+
+        .overlay-panel { position: absolute; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 0 40px; text-align: center; top: 0; height: 100%; width: 50%; transform: translateX(0); transition: transform 0.6s ease-in-out; }
+        .overlay-left { transform: translateX(-20%); }
+        .container-custom.right-panel-active .overlay-left { transform: translateX(0); }
+        .overlay-right { right: 0; transform: translateX(0); }
+        .container-custom.right-panel-active .overlay-right { transform: translateX(20%); }
+
+        .select-wrapper { width: 100%; position: relative; margin: 8px 0; }
+        .select-custom { background: #282828; border: none; padding: 15px; width: 100%; border-radius: 30px; font-size: 14px; outline: none; cursor: pointer; appearance: none; color: #ffffff; }
+
+        h1 { color: #ffffff !important; }
+        a { color: #b3b3b3; transition: color 0.3s ease; }
+        a:hover { color: #ffffff; }
+
+        @media (max-width: 768px) {
+          .container-custom { width: 100%; min-height: 640px; margin-top: 20px; }
+          .form-custom { padding: 0 30px; }
+          .overlay-panel { padding: 0 20px; }
+        }
+      `}</style>
+
+      <div
+        className={`container-custom ${isRightPanelActive ? 'right-panel-active' : ''}`}
+        id="container"
+        style={{ marginTop: typeof window !== 'undefined' ? window.__AUTH_TOP_OFFSET || '72px' : '72px' }}
+      >
+        {/* Institution Register */}
+        <div className="form-container institution-container">
+          <form className="form-custom" onSubmit={submit}>
+            <div className="icon">🏛️</div>
+            <h1 className="font-bold text-3xl mb-2">Institution Signup</h1>
+            <div className="user-type">Educational Institution</div>
+
+            {feedback.text && <div className={`text-sm mb-4 ${feedback.tone === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>{feedback.text}</div>}
+
+            <input type="text" name="name" placeholder="Institution Name" className="input-custom" value={form.name || ''} onChange={onChange('name')} required />
+            <input type="email" name="email" placeholder="Admin Email" className="input-custom" value={form.email || ''} onChange={onChange('email')} required />
+            <input type="password" name="password" placeholder="Password" className="input-custom" value={form.password || ''} onChange={onChange('password')} required />
+            <input type="text" name="registrationId" placeholder="Registration ID (optional)" className="input-custom" value={form.registrationId || ''} onChange={onChange('registrationId')} />
+
+            <button className="btn-custom" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create Account'}</button>
           </form>
+        </div>
 
-          {/* Footer */}
-          <div className="text-center mt-8 pt-6 border-t border-[#282828]">
-            <p className="text-[#b3b3b3]">
-              Already have an account?{' '}
-              <Link to="/login" className="text-white hover:text-[#1DB954] transition-colors font-bold hover:underline">
-                Sign in here
-              </Link>
-            </p>
+        {/* Student Register */}
+        <div className="form-container student-container">
+          <form className="form-custom" onSubmit={submit}>
+            <div className="icon">🎓</div>
+            <h1 className="font-bold text-3xl mb-2">Student Signup</h1>
+            <div className="user-type">Student Portal</div>
+
+            {feedback.text && <div className={`text-sm mb-4 ${feedback.tone === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>{feedback.text}</div>}
+
+            <div style={{width: '100%'}} className="grid grid-cols-2 gap-4">
+              <input placeholder="First Name" className="input-custom" value={form.firstName || ''} onChange={onChange('firstName')} required />
+              <input placeholder="Last Name" className="input-custom" value={form.lastName || ''} onChange={onChange('lastName')} required />
+            </div>
+            <input type="email" placeholder="Email" className="input-custom" value={form.email || ''} onChange={onChange('email')} required />
+            <input type="password" placeholder="Password" className="input-custom" value={form.password || ''} onChange={onChange('password')} required />
+            <input placeholder="Learner ID (e.g. LRN-2025-001)" className="input-custom" value={form.learnerId || ''} onChange={onChange('learnerId')} />
+
+            <button className="btn-custom" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create Account'}</button>
+
+            <span className="text-[#b3b3b3] text-sm mt-4">Already have an account? <a href="/login" className="text-[#1DB954] font-bold no-underline hover:text-[#1ed760]">Sign in here</a></span>
+          </form>
+        </div>
+
+        {/* Overlay Panel */}
+        <div className="overlay-container">
+          <div className="overlay">
+            <div className="overlay-panel overlay-left">
+              <div className="icon" style={{color: 'white'}}>🎓</div>
+              <h1 className="text-white text-3xl font-bold mb-4">Student Signup</h1>
+              <p className="text-white text-sm font-medium leading-relaxed mb-8">Create your student account to access courses and credentials.</p>
+              <button className="btn-custom btn-ghost" onClick={() => handleToggleRole('learner')}>Student Signup</button>
+            </div>
+            <div className="overlay-panel overlay-right">
+              <div className="icon" style={{color: 'white'}}>🏛️</div>
+              <h1 className="text-white text-3xl font-bold mb-4">Institution Registration</h1>
+              <p className="text-white text-sm font-medium leading-relaxed mb-8">Register your institution to issue and manage credentials.</p>
+              <button className="btn-custom btn-ghost" onClick={() => handleToggleRole('institute')}>Institution Signup</button>
+            </div>
           </div>
         </div>
       </div>
