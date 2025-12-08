@@ -3,24 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../services/api';
 import 'boxicons/css/boxicons.min.css';
 
-// Create a simple auth context for this component
-const AuthContext = React.createContext();
-
-// Hook to use auth context
-function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    // Fallback to localStorage-based auth
-    return {
-      login: (userData, token) => {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        window.location.href = '/';
-      }
-    };
-  }
-  return context;
-}
+import AuthContext from '../contexts/AuthContext';
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -28,7 +11,7 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login } = useContext(AuthContext);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -48,10 +31,12 @@ export default function Login() {
         return;
       }
 
-      const role = (data.role || '').toLowerCase();
-      
-      // Use the login function from context or fallback
-      login(data, data.token);
+      // Response may be { token, role, user } or a flattened user object
+      const role = ((data.role || data.user?.role) || '').toLowerCase();
+
+      // Use the login function from context with the actual user object
+      const userObj = data.user || data;
+      login(userObj, data.token);
 
       const destination = role === 'learner'
         ? '/learner'

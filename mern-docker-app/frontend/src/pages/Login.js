@@ -47,10 +47,11 @@ export default function Login() {
         return;
       }
 
-      const role = (data.role || '').toLowerCase();
-      
+      const role = ((data.role || data.user?.role) || '').toLowerCase();
+
       // Use the login function from context or fallback
-      login(data, data.token);
+      const userObj = data.user || data;
+      login(userObj, data.token);
 
       const destination = role === 'learner'
         ? '/learner'
