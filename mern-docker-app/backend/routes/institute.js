@@ -284,6 +284,33 @@ router.get(
   }
 );
 
+// Development/static institute dashboard (unauthenticated) - returns sample data
+router.get('/dashboard/static', (req, res) => {
+  const enabled = process.env.ENABLE_DEV_ENDPOINTS === 'true';
+  if (!enabled) {
+    return res.status(404).json({ message: 'Not found' });
+  }
+
+  const STATIC_INSTITUTE_DASH = {
+    success: true,
+    statistics: {
+      totalCertificates: 420,
+      issuedCertificates: 380,
+      pendingCertificates: 25,
+      revokedCertificates: 5,
+      pendingProofs: 12,
+      totalCourses: 8
+    },
+    recentCertificates: [
+      { _id: 'c1', student: { name: 'Asha Rao' }, course: { title: 'Advanced Full Stack' }, createdAt: new Date() },
+      { _id: 'c2', student: { name: 'Ravi Kumar' }, course: { title: 'Data Science & ML' }, createdAt: new Date() },
+      { _id: 'c3', student: { name: 'Priya Singh' }, course: { title: 'Cloud Engineering (AWS)' }, createdAt: new Date() }
+    ]
+  };
+
+  res.json(STATIC_INSTITUTE_DASH);
+});
+
 // ============================================
 // CERTIFICATE MANAGEMENT
 // ============================================

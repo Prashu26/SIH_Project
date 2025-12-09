@@ -1,0 +1,39 @@
+{
+  "certificatesTrend": [
+    { "month": "Jan", "certificates": 8, "verified": 6 },
+    { "month": "Feb", "certificates": 18, "verified": 15 },
+    { "month": "Mar", "certificates": 32, "verified": 28 },
+    { "month": "Apr", "certificates": 45, "verified": 40 },
+    { "month": "May", "certificates": 65, "verified": 58 },
+    { "month": "Jun", "certificates": 101, "verified": 91 }
+  ],
+  "certificateStatus": [
+    { "name": "Issued", "value": 191, "color": "#10b981" },
+    { "name": "Pending", "value": 0, "color": "#f59e0b" },
+    { "name": "Verified (Blockchain)", "value": 172, "color": "#3b82f6" },
+    { "name": "Revoked", "value": 0, "color": "#ef4444" }
+  ],
+  "courseStats": [
+    { "name": "Advanced Full Stack", "students": 45, "active": true },
+    { "name": "Data Science", "students": 38, "active": true },
+    { "name": "Cloud Engineering", "students": 32, "active": true },
+    { "name": "Cybersecurity Basics", "students": 28, "active": true },
+    { "name": "UI/UX Fundamentals", "students": 24, "active": true },
+    { "name": "DevOps Essentials", "students": 20, "active": true },
+    { "name": "Python Programming", "students": 18, "active": true },
+    { "name": "Mobile Development", "students": 15, "active": true },
+    { "name": "AI/ML Advanced", "students": 12, "active": true },
+    { "name": "Blockchain Basics", "students": 10, "active": true },
+    { "name": "Web3 Development", "students": 8, "active": true },
+    { "name": "IoT & Embedded", "students": 5, "active": true },
+    { "name": "Quantum Computing", "students": 3, "active": true }
+  ],
+  "stats": {
+    "totalCertificates": 191,
+    "verifiedCertificates": 172,
+    "pendingVerification": 0,
+    "activeCourses": 15,
+    "totalStudents": 37,
+    "verificationRate": 90
+  }
+}

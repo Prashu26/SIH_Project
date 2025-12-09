@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import API_BASE from '../services/api';
 import Messages from '../components/Messages';
 import CertificateVerification from '../components/CertificateVerification';
+import OrganizationAnalyticsDashboard from '../components/OrganizationAnalyticsDashboard';
 import { useLanguage } from '../contexts/LanguageContext';
 
 // Icons
@@ -28,6 +29,7 @@ const OrganizationDashboard = () => {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [staticAnalytics, setStaticAnalytics] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [filters, setFilters] = useState({
     skills: '',
@@ -55,6 +57,19 @@ const OrganizationDashboard = () => {
     }
     
     fetchDashboardData();
+
+    // Load public static analytics JSON for quick demo display
+    (async () => {
+      try {
+        const res = await fetch('/analytics-static.json');
+        if (res.ok) {
+          const data = await res.json();
+          setStaticAnalytics(data);
+        }
+      } catch (e) {
+        // ignore - file may not exist in production
+      }
+    })();
   }, [navigate]);
 
   const fetchDashboardData = async () => {
@@ -225,6 +240,7 @@ const OrganizationDashboard = () => {
         
         <nav className="flex-1 py-6 space-y-1">
           <SidebarItem id="overview" label={t('overview')} icon={Icons.Dashboard} />
+          <SidebarItem id="analytics" label="Analytics" icon={Icons.Dashboard} />
           <SidebarItem id="talent-pool" label={t('talentPool')} icon={Icons.Users} />
           <SidebarItem id="messages" label={t('messages')} icon={Icons.Message} />
           <SidebarItem id="hiring-requirements" label={t('hiring')} icon={Icons.Briefcase} />
@@ -475,6 +491,21 @@ const OrganizationDashboard = () => {
             <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
               <h3 className="text-xl font-bold text-gray-900 mb-6">{t('verifyCertificates')}</h3>
               <CertificateVerification />
+            </div>
+          )}
+
+          {/* Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h2>
+                <p className="text-gray-600 mt-1">Real-time insights and metrics from your organization</p>
+              </div>
+              <OrganizationAnalyticsDashboard 
+                organizationId={organization?.id || organization?._id} 
+                token={localStorage.getItem('orgToken')}
+                staticData={staticAnalytics}
+              />
             </div>
           )}
 

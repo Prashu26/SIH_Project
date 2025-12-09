@@ -89,6 +89,7 @@ const issuerRoutes = require('./routes/issuer');
 const certificateRoutes = require('./routes/certificates');
 const templateRoutes = require('./routes/templates');
 const organizationRoutes = require('./routes/organization');
+const organizationAnalyticsRoutes = require('./routes/organizationAnalytics');
 const messageRoutes = require('./routes/messages');
 const documentRoutes = require('./routes/documents');
 
@@ -107,6 +108,7 @@ app.use('/api/issuer', issuerRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/organization', organizationRoutes);
+app.use('/api/organization', organizationAnalyticsRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/documents', documentRoutes);
 
