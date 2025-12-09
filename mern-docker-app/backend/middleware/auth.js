@@ -15,13 +15,35 @@ const auth = (roles = []) => {
     try {
       const secret = process.env.JWT_SECRET || 'supersecret';
       const payload = jwt.verify(token, secret);
-      const normalizedRole = (payload.role || '').toLowerCase();
-      req.user = { ...payload, role: normalizedRole };
-      console.log(`Auth check - User role: "${normalizedRole}", Required roles: [${normalizedRoles.join(', ')}], Path: ${req.path}`);
-      if (normalizedRoles.length && !normalizedRoles.includes(normalizedRole)) {
-        console.log(`Auth DENIED - Role "${normalizedRole}" not in [${normalizedRoles.join(', ')}]`);
-        return res.status(403).json({ message: 'Forbidden - insufficient role' });
+      
+      // Handle both user tokens and organization tokens
+      if (payload.type === 'organization') {
+        // Organization token
+        req.user = {
+          ...payload,
+          type: 'organization',
+          organizationId: payload.organizationId,
+          email: payload.email
+        };
+        console.log(`Auth check - Organization: ${payload.organizationId}, Path: ${req.path}`);
+        
+        // Check if organization role is required
+        if (normalizedRoles.length && !normalizedRoles.includes('organization')) {
+          console.log(`Auth DENIED - Organization access not allowed for roles [${normalizedRoles.join(', ')}]`);
+          return res.status(403).json({ message: 'Forbidden - insufficient role' });
+        }
+      } else {
+        // User token (existing logic)
+        const normalizedRole = (payload.role || '').toLowerCase();
+        req.user = { ...payload, role: normalizedRole };
+        console.log(`Auth check - User role: "${normalizedRole}", Required roles: [${normalizedRoles.join(', ')}], Path: ${req.path}`);
+        
+        if (normalizedRoles.length && !normalizedRoles.includes(normalizedRole)) {
+          console.log(`Auth DENIED - Role "${normalizedRole}" not in [${normalizedRoles.join(', ')}]`);
+          return res.status(403).json({ message: 'Forbidden - insufficient role' });
+        }
       }
+      
       console.log('Auth PASSED');
       next();
     } catch (err) {

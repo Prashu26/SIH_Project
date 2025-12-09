@@ -1,28 +1,31 @@
 import React from 'react';
 import 'boxicons/css/boxicons.min.css';
 import Spline from '@splinetool/react-spline';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const About = () => {
+    const { t } = useLanguage();
+
     const features = [
         {
             icon: 'bx-shield-check',
-            title: 'Blockchain Security',
-            description: 'All certificates are secured using immutable blockchain technology, ensuring they cannot be tampered with or forged.'
+            title: t('blockchainSecurity'),
+            description: t('blockchainSecurityDesc')
         },
         {
             icon: 'bx-time',
-            title: 'Instant Verification',
-            description: 'Verify any certificate in seconds with our advanced verification system powered by smart contracts.'
+            title: t('instantVerification'),
+            description: t('instantVerificationDesc')
         },
         {
             icon: 'bx-globe',
-            title: 'Global Acceptance',
-            description: 'Our certificates are recognized worldwide and can be verified by any employer or institution.'
+            title: t('globalRecognition'),
+            description: t('globalRecognitionDesc')
         },
         {
             icon: 'bx-fingerprint',
-            title: 'Digital Identity',
-            description: 'Create a secure digital identity that showcases all your verified skills and achievements.'
+            title: t('digitalIdentity'),
+            description: t('digitalIdentityDesc')
         }
     ];
 
@@ -36,10 +39,10 @@ const About = () => {
     
     // Why-block list items (mapped so we can color the check badges)
     const whyItems = [
-      'Immutable records that cannot be altered or deleted',
-      'Decentralized verification without third-party dependencies',
-      'Global accessibility and transparency',
-      'Cost-effective and efficient verification process'
+      t('whyItem1'),
+      t('whyItem2'),
+      t('whyItem3'),
+      t('whyItem4')
     ];
     
     const checkBgColors = ['bg-yellow-400', 'bg-emerald-300', 'bg-cyan-300', 'bg-orange-400'];
@@ -47,21 +50,21 @@ const About = () => {
     const team = [
         {
             name: 'Dr. Sarah Johnson',
-            role: 'Lead Blockchain Developer',
+            role: t('teamMember1Role'),
             image: '/team1.jpg',
-            description: 'Expert in blockchain technology with 10+ years in cryptographic systems.'
+            description: t('teamMember1Desc')
         },
         {
             name: 'Mark Chen',
-            role: 'UI/UX Designer',
+            role: t('teamMember2Role'),
             image: '/team2.jpg',
-            description: 'Passionate about creating intuitive experiences for complex technologies.'
+            description: t('teamMember2Desc')
         },
         {
             name: 'Alex Rodriguez',
-            role: 'Full Stack Developer',
+            role: t('teamMember3Role'),
             image: '/team3.jpg',
-            description: 'Specialized in building scalable applications with modern technologies.'
+            description: t('teamMember3Desc')
         }
     ];
 
@@ -80,23 +83,20 @@ const About = () => {
                 <div className="text-center mb-16">
                     <h1 className="text-5xl font-bold mb-6">
                         <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                            About Our Platform
+                            {t('aboutTitle')}
                         </span>
                     </h1>
                     <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                        We're revolutionizing how skills and achievements are verified in the digital age. 
-                        Our blockchain-powered platform ensures that your credentials are secure, 
-                        verifiable, and globally recognized.
+                        {t('aboutDesc')}
                     </p>
                 </div>
 
                 {/* Mission Section */}
                 <div className="grid lg:grid-cols-2 gap-12 mb-20">
                     <div className="space-y-6">
-                        <h2 className="text-3xl font-bold text-white">Our Mission</h2>
+                        <h2 className="text-3xl font-bold text-white">{t('ourMission')}</h2>
                         <p className="text-gray-300 text-lg leading-relaxed">
-                            To create a trustworthy, transparent, and tamper-proof system for skill verification 
-                            that empowers learners, supports educators, and helps employers make informed decisions.
+                            {t('missionDesc')}
                         </p>
                         <p className="text-gray-300 text-lg leading-relaxed">
                             We believe that everyone deserves recognition for their skills and achievements, 

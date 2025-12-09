@@ -1,4 +1,5 @@
-studentUniqueCode,learnerEmail,courseName,modules,validUntil,ncvqLevel,qualificationCode,qualificationTitle,qualificationType
-UVCE2025-001,ramu1@gmail.com,Full stack,HTML|CSS|JavaScript|React|Node.js,2026-12-31,Level 4,NCVET-FS-2025,Full Stack Web Development,National Certificate
-UVCE2025-002,ramu@gmail.com,Full stack,HTML|CSS|JavaScript|React|MongoDB|Express,2026-12-31,Level 4,NCVET-FS-2025,Full Stack Web Development,National Certificate
-UVCE2025-003,testlearner@example.com,Full stack,JavaScript|React|Node.js|MongoDB|REST APIs,2026-12-31,Level 4,NCVET-FS-2025,Full Stack Web Development,National Certificate
+learnerEmail,studentUniqueCode,courseName,skills,validUntil,fatherName,motherName,dob,address,district,state,trade,duration,session,testMonth,testYear,nsqfLevel
+hgabhishekhg441@gmail.com,HGAB-001,Full Stack Development,"Tack welding and bead practice",2026-12-31,"Ravi","Pavani",01-01-2005,"123 Main St","Bengaluru","Karnataka","Welding","3 months","2024–2025","March","2025","Level 1"
+abhishekhg2003@gmail.com,ABHI-002,Full Stack Development,"Introduction to MIG & TIG welding",2026-12-31,"Raj","Pooja",01-02-2005,"456 Main St","Jaipur","Rajasthan","Welding","3 months","2024–2025","March","2025","Level 2"
+au58876@gmail.com,AU58876-003,Full Stack Development,"Handling welding tools & equipment",2026-12-31,"Rakesh","Ramya",07-09-2005,"789 Main St","Ranchi","Jharkhand","Welding","3 months","2024–2025","March","2025","Level 3"
+sspservices99@gmail.com,AU567-002,Full Stack Development,"Engine Basics, Tools Handling, Safety & Maintenance",2025-12-28,"Ram","Sitha",08-09-2005,"345 Main St","Mumbai","Maharashtra","Welding","3 months","2024–2025","March","2025","Level 4"

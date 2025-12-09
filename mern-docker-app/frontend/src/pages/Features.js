@@ -1,28 +1,31 @@
 import React from 'react';
 import 'boxicons/css/boxicons.min.css';
 import Spline from '@splinetool/react-spline';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Features = () => {
+    const { t } = useLanguage();
+
     const features = [
         {
             icon: 'bx-shield-check',
-            title: 'Blockchain Security',
-            description: 'All certificates are secured using immutable blockchain technology, ensuring they cannot be tampered with or forged.'
+            title: t('blockchainSecurity'),
+            description: t('blockchainSecurityDesc')
         },
         {
             icon: 'bx-time',
-            title: 'Instant Verification',
-            description: 'Verify any certificate in seconds with our advanced verification system powered by smart contracts.'
+            title: t('instantVerification'),
+            description: t('instantVerificationDesc')
         },
         {
             icon: 'bx-globe',
-            title: 'Global Acceptance',
-            description: 'Our certificates are recognized worldwide and can be verified by any employer or institution.'
+            title: t('globalRecognition'),
+            description: t('globalRecognitionDesc')
         },
         {
             icon: 'bx-fingerprint',
-            title: 'Digital Identity',
-            description: 'Create a secure digital identity that showcases all your verified skills and achievements.'
+            title: t('digitalIdentity'),
+            description: t('digitalIdentityDesc')
         }
     ];
 
@@ -36,10 +39,10 @@ const Features = () => {
     
     // Why-block list items (mapped so we can color the check badges)
     const whyItems = [
-      'Immutable records that cannot be altered or deleted',
-      'Decentralized verification without third-party dependencies',
-      'Global accessibility and transparency',
-      'Cost-effective and efficient verification process'
+      t('whyItem1'),
+      t('whyItem2'),
+      t('whyItem3'),
+      t('whyItem4')
     ];
     
     const checkBgColors = ['bg-yellow-400', 'bg-emerald-300', 'bg-cyan-300', 'bg-orange-400'];
@@ -48,66 +51,66 @@ const Features = () => {
     const mainFeatures = [
       {
         icon: 'bx-shield-check',
-        title: 'Blockchain Security',
-        description: 'Leveraging blockchain to provide immutable, verifiable credentials.',
+        title: t('mf1Title'),
+        description: t('mf1Desc'),
         details: [
-          'Smart contract-based verification',
-          'Cryptographic proof of authenticity',
-          'Tamper-proof certificate records',
-          'Decentralized validation network'
+          t('mf1d1'),
+          t('mf1d2'),
+          t('mf1d3'),
+          t('mf1d4')
         ]
       },
       {
         icon: 'bx-time',
-        title: 'Instant Verification',
-        description: 'Verify any certificate in seconds with our verification APIs.',
+        title: t('mf2Title'),
+        description: t('mf2Desc'),
         details: [
-          'API-first verification',
-          'QR code & file upload support',
-          'Low-latency responses',
-          'Scalable verification pipeline'
+          t('mf2d1'),
+          t('mf2d2'),
+          t('mf2d3'),
+          t('mf2d4')
         ]
       },
       {
         icon: 'bx-globe',
-        title: 'Global Recognition',
-        description: 'Trusted credentials accepted by institutions and employers worldwide.',
+        title: t('mf3Title'),
+        description: t('mf3Desc'),
         details: [
-          'Cross-border verification',
-          'Multi-language support',
-          'Standards compliance',
-          'Interoperable metadata'
+          t('mf3d1'),
+          t('mf3d2'),
+          t('mf3d3'),
+          t('mf3d4')
         ]
       }
     ];
 
     const technicalFeatures = [
-      { icon: 'bx-data', title: 'IPFS Storage', description: 'Distributed storage for certificate metadata and documents' },
-      { icon: 'bx-lock', title: 'End-to-End Encryption', description: 'Encryption for sensitive certificate payloads' },
-      { icon: 'bx-mobile', title: 'Mobile Responsive', description: 'Verify on any device' },
-      { icon: 'bx-sync', title: 'Real-time Sync', description: 'Immediate updates across systems' },
-      { icon: 'bx-cloud', title: 'Cloud Integration', description: 'Seamless integration with cloud providers' },
-      { icon: 'bx-support', title: '24/7 Support', description: 'Operations & developer support' }
+      { icon: 'bx-data', title: t('tf1Title'), description: t('tf1Desc') },
+      { icon: 'bx-lock', title: t('tf2Title'), description: t('tf2Desc') },
+      { icon: 'bx-mobile', title: t('tf3Title'), description: t('tf3Desc') },
+      { icon: 'bx-sync', title: t('tf4Title'), description: t('tf4Desc') },
+      { icon: 'bx-cloud', title: t('tf5Title'), description: t('tf5Desc') },
+      { icon: 'bx-support', title: t('tf6Title'), description: t('tf6Desc') }
     ];
 
     const useCases = [
       {
-        title: 'Educational Institutions',
-        description: 'Universities and schools issuing verified diplomas and certificates',
+        title: t('uc1Title'),
+        description: t('uc1Desc'),
         icon: 'bx-book',
-        benefits: ['Reduced fraud', 'Automated verification', 'Global recognition', 'Cost savings']
+        benefits: [t('uc1b1'), t('uc1b2'), t('uc1b3'), t('uc1b4')]
       },
       {
-        title: 'Professional Training',
-        description: 'Corporate training programs and skill certification',
+        title: t('uc2Title'),
+        description: t('uc2Desc'),
         icon: 'bx-briefcase',
-        benefits: ['Employee validation', 'Skill tracking', 'Compliance management', 'Career progression']
+        benefits: [t('uc2b1'), t('uc2b2'), t('uc2b3'), t('uc2b4')]
       },
       {
-        title: 'Online Learning',
-        description: 'MOOCs and e-learning platforms verifying course completion',
+        title: t('uc3Title'),
+        description: t('uc3Desc'),
         icon: 'bx-laptop',
-        benefits: ['Course credibility', 'Learner motivation', 'Quality assurance', 'Market trust']
+        benefits: [t('uc3b1'), t('uc3b2'), t('uc3b3'), t('uc3b4')]
       }
     ];
     // --- end added code ---
@@ -148,18 +151,17 @@ const Features = () => {
                 <div className="text-center mb-16">
                     <h1 className="text-5xl font-bold mb-6">
                         <span className="bg-gradient-to-r from-yellow-300 to-pink-300 bg-clip-text text-transparent">
-                            Platform Features
+                            {t('featuresTitle')}
                         </span>
                     </h1>
                     <p className="text-xl text-amber-100 max-w-3xl mx-auto leading-relaxed">
-                        Discover the powerful features that make our blockchain credentialing platform 
-                        the most secure and reliable solution for digital certificates.
+                        {t('featuresDesc')}
                     </p>
                 </div>
 
                 {/* Main Features */}
                 <div className="mb-20">
-                    <h2 className="text-3xl font-bold text-center text-amber-200 mb-12">Core Features</h2>
+                    <h2 className="text-3xl font-bold text-center text-amber-200 mb-12">{t('coreFeatures')}</h2>
                     <div className="space-y-12">
                         {mainFeatures.map((feature, index) => (
                             <div key={index} className={`grid lg:grid-cols-2 gap-12 items-center ${index % 2 === 1 ? 'lg:grid-flow-col-dense' : ''}`}>
@@ -184,7 +186,7 @@ const Features = () => {
                                     <div className="text-center">
                                         <i className={`bx ${feature.icon} text-6xl text-pink-300 mb-4`}></i>
                                         <h4 className="text-xl font-bold text-amber-100 mb-2">{feature.title}</h4>
-                                        <p className="text-amber-200">Interactive demonstration available</p>
+                                        <p className="text-amber-200">{t('interactiveDemo')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -194,7 +196,7 @@ const Features = () => {
 
                 {/* Technical Features Grid */}
                 <div className="mb-20">
-                    <h2 className="text-3xl font-bold text-center text-amber-200 mb-12">Technical Capabilities</h2>
+                    <h2 className="text-3xl font-bold text-center text-amber-200 mb-12">{t('technicalCapabilities')}</h2>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {technicalFeatures.map((feature, index) => (
                             <div key={index} className="bg-white/6 backdrop-blur-md border border-white/8 rounded-2xl p-6 hover:scale-105 transition-transform duration-200">
@@ -210,7 +212,7 @@ const Features = () => {
 
                 {/* Use Cases */}
                 <div className="mb-20">
-                    <h2 className="text-3xl font-bold text-center text-amber-200 mb-12">Use Cases</h2>
+                    <h2 className="text-3xl font-bold text-center text-amber-200 mb-12">{t('useCasesTitle')}</h2>
                     <div className="grid lg:grid-cols-3 gap-8">
                         {useCases.map((useCase, index) => (
                             <div key={index} className="bg-white/6 backdrop-blur-md border border-white/8 rounded-2xl p-8">
@@ -222,7 +224,7 @@ const Features = () => {
                                     <p className="text-amber-200">{useCase.description}</p>
                                 </div>
                                 <div className="space-y-3">
-                                    <h4 className="text-lg font-semibold text-amber-100">Key Benefits:</h4>
+                                    <h4 className="text-lg font-semibold text-amber-100">{t('keyBenefits')}</h4>
                                     <ul className="space-y-2">
                                         {useCase.benefits.map((benefit, idx) => (
                                             <li key={idx} className="flex items-center gap-2 text-amber-100 text-sm">
@@ -240,26 +242,26 @@ const Features = () => {
                 {/* API Integration */}
                 <div className="bg-white/6 backdrop-blur-md border border-white/8 rounded-2xl p-8">
                     <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-amber-200 mb-4">Developer-Friendly API</h2>
+                        <h2 className="text-3xl font-bold text-amber-200 mb-4">{t('devApiTitle')}</h2>
                         <p className="text-lg text-amber-100 max-w-2xl mx-auto">
-                            Integrate our verification system into your existing applications with our comprehensive RESTful API.
+                            {t('devApiDesc')}
                         </p>
                     </div>
                     <div className="grid md:grid-cols-3 gap-8 text-center">
                         <div>
                             <i className="bx bx-code-alt text-4xl text-yellow-300 mb-4"></i>
-                            <h3 className="text-xl font-bold text-amber-100 mb-2">RESTful API</h3>
-                            <p className="text-amber-200">Easy-to-use endpoints for certificate operations</p>
+                            <h3 className="text-xl font-bold text-amber-100 mb-2">{t('apiRestTitle')}</h3>
+                            <p className="text-amber-200">{t('apiRestDesc')}</p>
                         </div>
                         <div>
                             <i className="bx bx-book-open text-4xl text-pink-300 mb-4"></i>
-                            <h3 className="text-xl font-bold text-amber-100 mb-2">Documentation</h3>
-                            <p className="text-amber-200">Comprehensive guides and code examples</p>
+                            <h3 className="text-xl font-bold text-amber-100 mb-2">{t('apiDocTitle')}</h3>
+                            <p className="text-amber-200">{t('apiDocDesc')}</p>
                         </div>
                         <div>
                             <i className="bx bx-support text-4xl text-rose-300 mb-4"></i>
-                            <h3 className="text-xl font-bold text-amber-100 mb-2">SDK Support</h3>
-                            <p className="text-amber-200">SDKs for popular programming languages</p>
+                            <h3 className="text-xl font-bold text-amber-100 mb-2">{t('apiSdkTitle')}</h3>
+                            <p className="text-amber-200">{t('apiSdkDesc')}</p>
                         </div>
                     </div>
                 </div>

@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Menu, X, Home, Users, BookOpen, FileCheck, Award, Settings, Bell, Search, Plus, TrendingUp, Activity, Clock, ChevronRight, Filter, Download } from 'lucide-react';
 import { apiFetch } from "../services/api";
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function AdminDashboard({ token }) {
+  const { t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [overview, setOverview] = useState(null);
@@ -42,7 +44,7 @@ export default function AdminDashboard({ token }) {
           setStatus({
             loading: false,
             error:
-              overviewRes.data?.message || "Unable to load admin overview.",
+              overviewRes.data?.message || t('adminOverviewError'),
           });
         } else {
           setOverview(overviewRes.data);
@@ -61,8 +63,8 @@ export default function AdminDashboard({ token }) {
           usersRes.data.users.slice(0, 2).forEach(user => {
             activities.push({
               user: user.name || user.email,
-              action: 'Enrolled in',
-              course: 'Course',
+              action: t('enrolledIn'),
+              course: t('courses'),
               time: '2h ago'
             });
           });
@@ -71,8 +73,8 @@ export default function AdminDashboard({ token }) {
           instituteRes.data.users.slice(0, 1).forEach(inst => {
             activities.push({
               user: inst.name,
-              action: 'Added new course',
-              course: 'Platform',
+              action: t('addedNewCourse'),
+              course: t('platform'),
               time: '5h ago'
             });
           });
@@ -96,10 +98,10 @@ export default function AdminDashboard({ token }) {
   
   // Generate stats from API data
   const stats = [
-    { label: 'USERS', value: overview?.stats?.users || '0', change: '+12%', trend: 'up', icon: Users, color: 'from-violet-500 to-purple-600' },
-    { label: 'COURSES', value: overview?.stats?.courses || '0', change: '+23%', trend: 'up', icon: BookOpen, color: 'from-blue-500 to-cyan-600' },
-    { label: 'PROOFS', value: overview?.stats?.proofs || '0', change: '0%', trend: 'neutral', icon: FileCheck, color: 'from-amber-500 to-orange-600' },
-    { label: 'CERTIFICATES', value: overview?.stats?.certificates || '0', change: '+8%', trend: 'up', icon: Award, color: 'from-emerald-500 to-teal-600' }
+    { label: t('users').toUpperCase(), value: overview?.stats?.users || '0', change: '+12%', trend: 'up', icon: Users, color: 'from-violet-500 to-purple-600' },
+    { label: t('courses').toUpperCase(), value: overview?.stats?.courses || '0', change: '+23%', trend: 'up', icon: BookOpen, color: 'from-blue-500 to-cyan-600' },
+    { label: t('proofs').toUpperCase(), value: overview?.stats?.proofs || '0', change: '0%', trend: 'neutral', icon: FileCheck, color: 'from-amber-500 to-orange-600' },
+    { label: t('certificates').toUpperCase(), value: overview?.stats?.certificates || '0', change: '+8%', trend: 'up', icon: Award, color: 'from-emerald-500 to-teal-600' }
   ];
 
   // Generate activity data for charts (mock data with real stats)
@@ -125,8 +127,8 @@ export default function AdminDashboard({ token }) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-4">
         <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-8 max-w-md text-center">
-          <h3 className="text-2xl font-bold text-white mb-2">Admin Console</h3>
-          <p className="text-slate-400">Sign in as an administrator to view system metrics.</p>
+          <h3 className="text-2xl font-bold text-white mb-2">{t('adminConsole')}</h3>
+          <p className="text-slate-400">{t('signInAdmin')}</p>
         </div>
       </div>
     );
@@ -148,20 +150,20 @@ export default function AdminDashboard({ token }) {
               <Award className="w-7 h-7 text-white" />
             </div>
             <div>
-              <span className="text-xl font-bold text-white block">EduAdmin</span>
-              <span className="text-xs text-slate-400">Pro Dashboard</span>
+              <span className="text-xl font-bold text-white block">{t('eduAdmin')}</span>
+              <span className="text-xs text-slate-400">{t('proDashboard')}</span>
             </div>
           </div>
           
           <nav className="space-y-1">
             {[
-              { icon: Home, label: 'Dashboard', id: 'dashboard' },
-              { icon: Users, label: 'Users', id: 'users', badge: overview?.stats?.users?.toString() || '0' },
-              { icon: BookOpen, label: 'Courses', id: 'courses', badge: overview?.stats?.courses?.toString() || '0' },
-              { icon: FileCheck, label: 'Proofs', id: 'proofs' },
-              { icon: Award, label: 'Certificates', id: 'certificates', badge: overview?.stats?.certificates?.toString() || '0' },
-              { icon: Activity, label: 'Analytics', id: 'analytics' },
-              { icon: Settings, label: 'Settings', id: 'settings' }
+              { icon: Home, label: t('dashboard'), id: 'dashboard' },
+              { icon: Users, label: t('users'), id: 'users', badge: overview?.stats?.users?.toString() || '0' },
+              { icon: BookOpen, label: t('courses'), id: 'courses', badge: overview?.stats?.courses?.toString() || '0' },
+              { icon: FileCheck, label: t('proofs'), id: 'proofs' },
+              { icon: Award, label: t('certificates'), id: 'certificates', badge: overview?.stats?.certificates?.toString() || '0' },
+              { icon: Activity, label: t('analytics'), id: 'analytics' },
+              { icon: Settings, label: t('settings'), id: 'settings' }
             ].map((item, i) => (
               <button 
                 key={i} 
@@ -194,14 +196,14 @@ export default function AdminDashboard({ token }) {
               </button>
               <div className="flex items-center gap-3 px-5 py-3 bg-slate-800/30 rounded-xl border border-slate-700/50">
                 <Search className="w-5 h-5 text-slate-400" />
-                <input type="text" placeholder="Search anything..." className="bg-transparent outline-none text-white placeholder-slate-500 w-96" />
+                <input type="text" placeholder={t('searchAnything')} className="bg-transparent outline-none text-white placeholder-slate-500 w-96" />
               </div>
             </div>
             
             <div className="flex items-center gap-3">
               <button className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl text-white font-medium shadow-lg shadow-blue-500/30 transition-all flex items-center gap-2">
                 <Plus className="w-4 h-4" />
-                Add New
+                {t('addNew')}
               </button>
               <button className="p-2.5 hover:bg-slate-800/50 rounded-xl text-white relative transition-all">
                 <Bell className="w-5 h-5" />
@@ -215,8 +217,8 @@ export default function AdminDashboard({ token }) {
         {/* Dashboard Content */}
         <main className="p-6 relative">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-white mb-2">Dashboard Overview</h1>
-            <p className="text-slate-400">Welcome back! Here's what's happening with your platform today.</p>
+            <h1 className="text-3xl font-bold text-white mb-2">{t('dashboardOverview')}</h1>
+            <p className="text-slate-400">{t('welcomeBackAdmin')}</p>
           </div>
 
           {/* Error Message */}
@@ -263,8 +265,8 @@ export default function AdminDashboard({ token }) {
             <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-xl font-semibold text-white">Growth Analytics</h3>
-                  <p className="text-slate-400 text-sm mt-1">Users and courses over time</p>
+                  <h3 className="text-xl font-semibold text-white">{t('growthAnalytics')}</h3>
+                  <p className="text-slate-400 text-sm mt-1">{t('usersAndCourses')}</p>
                 </div>
                 <button className="p-2 hover:bg-slate-800/50 rounded-lg text-slate-400 hover:text-white transition-all">
                   <Filter className="w-5 h-5" />
@@ -296,8 +298,8 @@ export default function AdminDashboard({ token }) {
             <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-xl font-semibold text-white">Certificates Issued</h3>
-                  <p className="text-slate-400 text-sm mt-1">Monthly certificate distribution</p>
+                  <h3 className="text-xl font-semibold text-white">{t('issuedCertificates')}</h3>
+                  <p className="text-slate-400 text-sm mt-1">{t('monthlyCertificateDistribution')}</p>
                 </div>
                 <button className="p-2 hover:bg-slate-800/50 rounded-lg text-slate-400 hover:text-white transition-all">
                   <Download className="w-5 h-5" />
@@ -326,15 +328,15 @@ export default function AdminDashboard({ token }) {
             {/* Institutes */}
             <div className="lg:col-span-2 bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-white">Institutes Directory</h3>
+                <h3 className="text-xl font-semibold text-white">{t('institutesDirectory')}</h3>
                 <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-white text-sm font-medium transition-all flex items-center gap-2">
                   <Plus className="w-4 h-4" />
-                  Add Institute
+                  {t('addInstitute')}
                 </button>
               </div>
               <div className="space-y-4">
                 {instituteDirectory.length === 0 ? (
-                  <p className="text-slate-400 text-center py-8">No institutes found.</p>
+                  <p className="text-slate-400 text-center py-8">{t('noInstitutesFound')}</p>
                 ) : (
                   instituteDirectory.slice(0, 3).map((inst, i) => (
                     <div key={i} className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 hover:border-blue-500/50 transition-all group">
@@ -347,17 +349,17 @@ export default function AdminDashboard({ token }) {
                           </div>
                         </div>
                         <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400 text-xs font-semibold">
-                          ACTIVE
+                          {t('active')}
                         </span>
                       </div>
                       <div className="flex items-center gap-6 pt-4 border-t border-slate-700/50">
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 text-slate-400" />
-                          <span className="text-slate-300 text-sm">Pending</span>
+                          <span className="text-slate-300 text-sm">{t('pending')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <BookOpen className="w-4 h-4 text-slate-400" />
-                          <span className="text-slate-300 text-sm">Verified</span>
+                          <span className="text-slate-300 text-sm">{t('verified')}</span>
                         </div>
                       </div>
                     </div>
@@ -368,10 +370,10 @@ export default function AdminDashboard({ token }) {
 
             {/* Recent Activity */}
             <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6">
-              <h3 className="text-xl font-semibold text-white mb-6">Recent Activity</h3>
+              <h3 className="text-xl font-semibold text-white mb-6">{t('recentActivity')}</h3>
               <div className="space-y-4">
                 {recentActivity.length === 0 ? (
-                  <p className="text-slate-400 text-center py-8">No recent activity.</p>
+                  <p className="text-slate-400 text-center py-8">{t('noRecentActivity')}</p>
                 ) : (
                   recentActivity.map((activity, i) => (
                     <div key={i} className="flex items-start gap-3 pb-4 border-b border-slate-800/50 last:border-0 last:pb-0">
@@ -394,15 +396,15 @@ export default function AdminDashboard({ token }) {
           {/* Learners Section */}
           <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">Learners Directory</h3>
+              <h3 className="text-xl font-semibold text-white">{t('learnersDirectory')}</h3>
               <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-xl text-white text-sm font-medium transition-all flex items-center gap-2">
                 <Plus className="w-4 h-4" />
-                Add Learner
+                {t('addLearner')}
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {users.length === 0 ? (
-                <p className="text-slate-400 col-span-full text-center py-8">No learners found.</p>
+                <p className="text-slate-400 col-span-full text-center py-8">{t('noLearnersFound')}</p>
               ) : (
                 users.slice(0, 6).map((learner, i) => (
                   <div key={i} className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 hover:border-purple-500/50 transition-all group">
@@ -416,16 +418,16 @@ export default function AdminDashboard({ token }) {
                     <p className="text-slate-400 text-sm mb-4">{learner.email}</p>
                     <div className="space-y-2 pt-4 border-t border-slate-700/50">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">Courses</span>
+                        <span className="text-slate-400">{t('courses')}</span>
                         <span className="text-white font-semibold">0</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">Certificates</span>
+                        <span className="text-slate-400">{t('certificates')}</span>
                         <span className="text-white font-semibold">0</span>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-slate-500 mt-3">
                         <Clock className="w-3 h-3" />
-                        Active now
+                        {t('activeNow')}
                       </div>
                     </div>
                   </div>
@@ -437,7 +439,7 @@ export default function AdminDashboard({ token }) {
           {/* Pending Approvals Section */}
           {institutes.length > 0 && (
             <div className="mt-6 bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6">
-              <h3 className="text-xl font-semibold text-white mb-6">Pending Institute Registrations</h3>
+              <h3 className="text-xl font-semibold text-white mb-6">{t('pendingInstituteRegistrations')}</h3>
               <div className="space-y-4">
                 {institutes.map((inst, i) => (
                   <div key={i} className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 flex items-center justify-between hover:border-amber-500/50 transition-all">
@@ -445,7 +447,7 @@ export default function AdminDashboard({ token }) {
                       <h4 className="text-white font-semibold text-lg mb-1">{inst.name}</h4>
                       <p className="text-slate-400 text-sm mb-2">{inst.email}</p>
                       <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                        <span className="text-amber-400 text-xs font-mono font-semibold">Reg ID: {inst.instituteProfile?.registrationId}</span>
+                        <span className="text-amber-400 text-xs font-mono font-semibold">{t('regId')}: {inst.instituteProfile?.registrationId}</span>
                       </div>
                     </div>
                     <button
@@ -472,7 +474,7 @@ export default function AdminDashboard({ token }) {
                         }
                       }}
                     >
-                      Approve
+                      {t('approve')}
                     </button>
                   </div>
                 ))}

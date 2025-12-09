@@ -1,13 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function NotFound() {
+  const { t } = useLanguage();
   return (
     <div className="card form-card">
-      <h3>Page not found</h3>
-      <p className="empty-state">We could not find the page you requested.</p>
+      <h3>{t('pageNotFound')}</h3>
+      <p className="empty-state">{t('pageNotFoundDesc')}</p>
       <Link className="cta" to="/">
-        Return home
+        {t('returnHome')}
       </Link>
     </div>
   );

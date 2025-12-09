@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import 'boxicons/css/boxicons.min.css';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Simple auth hook for header
 function useAuth() {
@@ -22,6 +23,7 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { language, changeLanguage, t } = useLanguage();
 
   const toggleMobileMenu = () => {
     setOpen(!open);
@@ -31,21 +33,34 @@ const Header = () => {
     return location.pathname === path || location.pathname.startsWith(path);
   };
 
+  const languages = [
+    { code: 'en', label: 'English' },
+    { code: 'hi', label: 'हिंदी' },
+    { code: 'raj', label: 'राजस्थानी' },
+    { code: 'kn', label: 'ಕನ್ನಡ' },
+    { code: 'ta', label: 'தமிழ்' },
+    { code: 'te', label: 'తెలుగు' },
+    { code: 'ml', label: 'മലയാളം' },
+    { code: 'mr', label: 'मराठी' },
+    { code: 'bn', label: 'বাংলা' },
+    { code: 'gu', label: 'ગુજરાતી' }
+  ];
+
   const navItems = [
-    { path: '/', label: 'Home', icon: 'bx-home' },
-    { path: '/verify', label: 'Verify', icon: 'bx-shield-check' },
-    { path: '/features', label: 'Features', icon: 'bx-star' },
-    { path: '/about', label: 'About', icon: 'bx-info-circle' },
-    { path: '/team', label: 'Team', icon: 'bx-group' }
+    { path: '/', label: t('home'), icon: 'bx-home' },
+    { path: '/verify', label: t('verify'), icon: 'bx-shield-check' },
+    { path: '/features', label: t('features'), icon: 'bx-star' },
+    { path: '/about', label: t('about'), icon: 'bx-info-circle' },
+    { path: '/team', label: t('team'), icon: 'bx-group' }
   ];
 
   const dashboardItems = user ? [
-    ...(user.role === 'learner' ? [{ path: '/learner', label: 'My Certificates', icon: 'bx-certificate' }] : []),
+    ...(user.role === 'learner' ? [{ path: '/learner', label: t('myCertificates'), icon: 'bx-certificate' }] : []),
     ...((user.role === 'institution' || user.role === 'institute') ? [
-      { path: '/institution?tab=certificates', label: 'Institute Panel', icon: 'bx-building' },
-      { path: '/institution?tab=issue', label: 'Issue Certificate', icon: 'bx-add-to-queue' }
+      { path: '/institution?tab=certificates', label: t('institutePanel'), icon: 'bx-building' },
+      { path: '/institution?tab=issue', label: t('issueCertificate'), icon: 'bx-add-to-queue' }
     ] : []),
-    ...(user.role === 'admin' ? [{ path: '/admin', label: 'Admin Panel', icon: 'bx-cog' }] : [])
+    ...(user.role === 'admin' ? [{ path: '/admin', label: t('adminPanel'), icon: 'bx-cog' }] : [])
   ] : [];
 
   return (
@@ -105,6 +120,21 @@ const Header = () => {
           ))}
         </nav>
 
+        {/* Language Selector (Desktop) */}
+        <div className="hidden md:block mr-4">
+          <select
+            value={language}
+            onChange={(e) => changeLanguage(e.target.value)}
+            className="bg-gray-800 text-white text-sm rounded-lg border border-gray-700 focus:ring-blue-500 focus:border-blue-500 block p-2"
+          >
+            {languages.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* User Actions */}
         <div className="hidden md:flex items-center gap-4">
           {user ? (
@@ -118,7 +148,7 @@ const Header = () => {
                 className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors"
               >
                 <i className="bx bx-log-out"></i>
-                Logout
+                {t('logout')}
               </button>
             </div>
           ) : (
@@ -128,15 +158,24 @@ const Header = () => {
                 className="flex items-center gap-2 text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all"
               >
                 <i className="bx bx-log-in"></i>
-                Sign In
+                {t('signIn')}
               </Link>
               <Link
                 to="/register"
                 className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2 px-4 rounded-lg transition-all shadow-lg shadow-blue-500/25"
               >
                 <i className="bx bx-user-plus"></i>
-                Sign Up
+                {t('signUp')}
               </Link>
+              <div className="border-l border-gray-600 pl-3">
+                <Link
+                  to="/organization/login"
+                  className="flex items-center gap-2 text-gray-300 hover:text-white px-3 py-2 rounded-lg hover:bg-gray-800/50 transition-all text-sm"
+                >
+                  <i className="bx bx-buildings"></i>
+                  {t('forOrganizations')}
+                </Link>
+              </div>
             </div>
           )}
         </div>
@@ -154,6 +193,21 @@ const Header = () => {
           <div className="fixed inset-0 bg-black/90 backdrop-blur-md md:hidden z-40">
             <div className="flex flex-col h-full pt-20 p-6">
               <nav className="flex flex-col gap-4 flex-1">
+                {/* Language Selector (Mobile) */}
+                <div className="mb-4">
+                  <select
+                    value={language}
+                    onChange={(e) => changeLanguage(e.target.value)}
+                    className="w-full bg-gray-800 text-white text-lg rounded-xl border border-gray-700 focus:ring-blue-500 focus:border-blue-500 block p-4"
+                  >
+                    {languages.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {navItems.map((item) => (
                   <Link
                     key={item.path}

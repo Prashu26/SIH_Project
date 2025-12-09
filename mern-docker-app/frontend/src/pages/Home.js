@@ -1,31 +1,34 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import 'boxicons/css/boxicons.min.css';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Home = () => {
+    const { t } = useLanguage();
+
     const features = [
         {
             icon: 'bx-shield-check',
-            title: 'Blockchain Security',
-            description: 'Immutable certificate verification using cutting-edge blockchain technology',
+            title: t('blockchainSecurity'),
+            description: t('blockchainSecurityDesc'),
             color: 'from-blue-500 to-cyan-500'
         },
         {
             icon: 'bx-time',
-            title: 'Instant Verification',
-            description: 'Real-time certificate validation in seconds, not days or weeks',
+            title: t('instantVerification'),
+            description: t('instantVerificationDesc'),
             color: 'from-purple-500 to-pink-500'
         },
         {
             icon: 'bx-globe',
-            title: 'Global Recognition',
-            description: 'Internationally accepted credentials that open doors worldwide',
+            title: t('globalRecognition'),
+            description: t('globalRecognitionDesc'),
             color: 'from-green-500 to-teal-500'
         },
         {
             icon: 'bx-fingerprint',
-            title: 'Digital Identity',
-            description: 'Secure digital profiles showcasing verified skills and achievements',
+            title: t('digitalIdentity'),
+            description: t('digitalIdentityDesc'),
             color: 'from-orange-500 to-red-500'
         }
     ];
@@ -33,41 +36,41 @@ const Home = () => {
     const steps = [
         {
             step: '01',
-            title: 'Register',
-            description: 'Create your account as a learner or institution',
+            title: t('step1Title'),
+            description: t('step1Desc'),
             icon: 'bx-user-plus'
         },
         {
             step: '02',
-            title: 'Issue Certificate',
-            description: 'Institutions issue blockchain-secured certificates',
+            title: t('step2Title'),
+            description: t('step2Desc'),
             icon: 'bx-certificate'
         },
         {
             step: '03',
-            title: 'Verify Instantly',
-            description: 'Anyone can verify certificates using our secure platform',
+            title: t('step3Title'),
+            description: t('step3Desc'),
             icon: 'bx-check-shield'
         }
     ];
 
     const testimonials = [
         {
-            name: 'Sarah Johnson',
-            role: 'University Registrar',
-            comment: 'Our certificate fraud cases dropped to zero after implementing this platform.',
+            name: t('testimonial1Name'),
+            role: t('testimonial1Role'),
+            comment: t('testimonial1Comment'),
             avatar: 'S'
         },
         {
-            name: 'Mark Chen',
-            role: 'HR Director',
-            comment: 'Verification that used to take weeks now happens in seconds. Amazing!',
+            name: t('testimonial2Name'),
+            role: t('testimonial2Role'),
+            comment: t('testimonial2Comment'),
             avatar: 'M'
         },
         {
-            name: 'Emily Rodriguez',
-            role: 'Online Learner',
-            comment: 'My certificates are now globally recognized. This changed my career prospects.',
+            name: t('testimonial3Name'),
+            role: t('testimonial3Role'),
+            comment: t('testimonial3Comment'),
             avatar: 'E'
         }
     ];
@@ -82,10 +85,10 @@ const Home = () => {
 
                     <div className="text-center mb-8 relative z-10">
                         <h2 className="text-4xl font-bold text-sky-100 mb-4">
-                            Why Choose Our Platform?
+                            {t('whyChoose')}
                         </h2>
                         <p className="text-lg text-sky-200/80 max-w-3xl mx-auto">
-                            Experience the future of credential verification with our blockchain-powered platform
+                            {t('whyChooseSubtitle')}
                         </p>
                     </div>
 
@@ -113,8 +116,8 @@ const Home = () => {
                     <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[radial-gradient(ellipse_at_bottom_right,rgba(200,230,255,0.02),transparent)] pointer-events-none rounded-2xl" />
 
                     <div className="text-center mb-8 relative z-10">
-                        <h2 className="text-4xl font-bold text-sky-100 mb-4">How It Works</h2>
-                        <p className="text-lg text-sky-200/80 max-w-2xl mx-auto">Simple steps to secure, issue, and verify digital credentials</p>
+                        <h2 className="text-4xl font-bold text-sky-100 mb-4">{t('howItWorks')}</h2>
+                        <p className="text-lg text-sky-200/80 max-w-2xl mx-auto">{t('howItWorksSubtitle')}</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8 relative z-10">
@@ -123,7 +126,7 @@ const Home = () => {
                                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-sky-300 to-indigo-300 mx-auto mb-4 shadow-[0_12px_40px_rgba(99,102,241,0.06)]">
                                     <i className={`bx ${step.icon} text-3xl text-white`}></i>
                                 </div>
-                                <div className="text-sky-200 font-bold mb-2">Step {step.step}</div>
+                                <div className="text-sky-200 font-bold mb-2">{t('step')} {step.step}</div>
                                 <h3 className="text-2xl font-semibold text-sky-100 mb-2">{step.title}</h3>
                                 <p className="text-sky-200/80">{step.description}</p>
                             </div>
@@ -139,8 +142,8 @@ const Home = () => {
                     <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[radial-gradient(ellipse_at_bottom_right,rgba(200,230,255,0.02),transparent)] pointer-events-none rounded-2xl" />
 
                     <div className="text-center mb-8 relative z-10">
-                        <h2 className="text-4xl font-bold text-sky-100 mb-4">Get Started Today</h2>
-                        <p className="text-lg text-sky-200/80 max-w-2xl mx-auto">Join thousands of institutions and learners already using our platform</p>
+                        <h2 className="text-4xl font-bold text-sky-100 mb-4">{t('ctaTitle')}</h2>
+                        <p className="text-lg text-sky-200/80 max-w-2xl mx-auto">{t('ctaSubtitle')}</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8 relative z-10 max-w-4xl mx-auto">
@@ -148,24 +151,24 @@ const Home = () => {
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 mb-4 shadow-[0_8px_30px_rgba(99,102,241,0.06)]">
                                 <i className="bx bx-user-plus text-2xl text-white"></i>
                             </div>
-                            <h3 className="text-xl font-semibold text-sky-100 mb-2">Sign Up</h3>
-                            <p className="text-sky-200/80">Create your account and start issuing or collecting certificates</p>
+                            <h3 className="text-xl font-semibold text-sky-100 mb-2">{t('qaSignUp')}</h3>
+                            <p className="text-sky-200/80">{t('qaSignUpDesc')}</p>
                         </Link>
 
                         <Link to="/verify" className="rounded-2xl p-6 bg-white/3 border border-white/6 backdrop-blur-sm text-center flex flex-col items-center">
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400 mb-4 shadow-[0_8px_30px_rgba(99,102,241,0.06)]">
                                 <i className="bx bx-search text-2xl text-white"></i>
                             </div>
-                            <h3 className="text-xl font-semibold text-sky-100 mb-2">Verify Certificate</h3>
-                            <p className="text-sky-200/80">Instantly verify any certificate using our blockchain verification</p>
+                            <h3 className="text-xl font-semibold text-sky-100 mb-2">{t('qaVerify')}</h3>
+                            <p className="text-sky-200/80">{t('qaVerifyDesc')}</p>
                         </Link>
 
                         <Link to="/features" className="rounded-2xl p-6 bg-white/3 border border-white/6 backdrop-blur-sm text-center flex flex-col items-center">
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 shadow-[0_8px_30px_rgba(99,102,241,0.06)]">
                                 <i className="bx bx-star text-2xl text-white"></i>
                             </div>
-                            <h3 className="text-xl font-semibold text-sky-100 mb-2">Explore Features</h3>
-                            <p className="text-sky-200/80">Discover all the powerful features our platform offers</p>
+                            <h3 className="text-xl font-semibold text-sky-100 mb-2">{t('qaExplore')}</h3>
+                            <p className="text-sky-200/80">{t('qaExploreDesc')}</p>
                         </Link>
                     </div>
                 </div>
@@ -216,7 +219,7 @@ const Home = () => {
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-sky-200" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
                                 <span>15,420+</span>
                             </div>
-                            <p className="text-sky-200/80">Certificates Issued</p>
+                            <p className="text-sky-200/80">{t('statsCertificatesIssued')}</p>
                         </div>
 
                         <div>
@@ -224,7 +227,7 @@ const Home = () => {
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-indigo-200" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
                                 <span>245+</span>
                             </div>
-                            <p className="text-indigo-200/80">Partner Institutions</p>
+                            <p className="text-indigo-200/80">{t('statsPartnerInstitutions')}</p>
                         </div>
 
                         <div>
@@ -232,7 +235,7 @@ const Home = () => {
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-cyan-200" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
                                 <span>89,650+</span>
                             </div>
-                            <p className="text-cyan-200/80">Verifications Completed</p>
+                            <p className="text-cyan-200/80">{t('statsVerificationsCompleted')}</p>
                         </div>
 
                         <div>
@@ -240,7 +243,7 @@ const Home = () => {
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-teal-200" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
                                 <span>99.9%</span>
                             </div>
-                            <p className="text-teal-200/80">Uptime Guarantee</p>
+                            <p className="text-teal-200/80">{t('statsUptimeGuarantee')}</p>
                         </div>
                     </div>
                 </div>
@@ -257,9 +260,9 @@ const Home = () => {
                         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-sky-300/30 to-indigo-300/30 mb-6 shadow-[0_12px_40px_rgba(99,102,241,0.06)]">
                             <i className="bx bx-snowflake text-3xl text-white/90"></i>
                         </div>
-                        <h2 className="text-4xl font-extrabold text-sky-100 mb-4">Ready to Get Started?</h2>
+                        <h2 className="text-4xl font-extrabold text-sky-100 mb-4">{t('ctaTitle')}</h2>
                         <p className="text-lg text-sky-200/80 mb-8 max-w-2xl mx-auto">
-                            Join the season of secure, instant and globally recognized credentials — protected by blockchain.
+                            {t('ctaSubtitle')}
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -268,14 +271,14 @@ const Home = () => {
                                 className="inline-flex items-center justify-center bg-gradient-to-r from-sky-300 to-indigo-300 text-sky-900 px-8 py-4 rounded-lg font-bold hover:scale-105 transform transition shadow-sm"
                             >
                                 <i className="bx bx-rocket mr-3"></i>
-                                Start Free Trial
+                                {t('getStarted')}
                             </Link>
 
                             <Link
                                 to="/contact"
                                 className="inline-flex items-center justify-center border border-sky-200/30 text-sky-200 px-8 py-4 rounded-lg font-bold bg-white/6 hover:bg-white/12 transition"
                             >
-                                Contact Sales
+                                {t('contactSales')}
                             </Link>
                         </div>
                     </div>

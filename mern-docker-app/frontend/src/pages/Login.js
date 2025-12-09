@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiFetch } from '../services/api';
 import 'boxicons/css/boxicons.min.css';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Create a simple auth context for this component
 const AuthContext = React.createContext();
@@ -23,6 +24,7 @@ function useAuth() {
 }
 
 export default function Login() {
+  const { t } = useLanguage();
   const [form, setForm] = useState({ email: '', password: '' });
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,14 +45,15 @@ export default function Login() {
       setIsSubmitting(false);
 
       if (!ok) {
-        setMessage(data.message || 'Login failed');
+        setMessage(data.message || t('loginFailed'));
         return;
       }
 
-      const role = (data.role || '').toLowerCase();
-      
+      const role = ((data.role || data.user?.role) || '').toLowerCase();
+
       // Use the login function from context or fallback
-      login(data, data.token);
+      const userObj = data.user || data;
+      login(userObj, data.token);
 
       const destination = role === 'learner'
         ? '/learner'
@@ -62,7 +65,7 @@ export default function Login() {
       navigate(destination);
     } catch (error) {
       setIsSubmitting(false);
-      setMessage('Network error. Please try again.');
+      setMessage(t('networkError'));
       console.error('Login error:', error);
     }
   };
@@ -76,14 +79,14 @@ export default function Login() {
             <div className="bg-gradient-to-r from-blue-400 to-purple-500 p-3 rounded-xl w-16 h-16 mx-auto mb-4 flex items-center justify-center">
               <i className="bx bx-log-in text-white text-2xl"></i>
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
-            <p className="text-gray-300">Sign in to your account to continue</p>
+            <h2 className="text-3xl font-bold text-white mb-2">{t('welcomeBack')}</h2>
+            <p className="text-gray-300">{t('loginToContinue')}</p>
           </div>
 
           {/* Form */}
           <form onSubmit={submit} className="space-y-6">
             <div>
-              <label className="block text-gray-300 mb-2 font-medium">Email Address</label>
+              <label className="block text-gray-300 mb-2 font-medium">{t('emailAddress')}</label>
               <div className="relative">
                 <i className="bx bx-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 <input
@@ -91,7 +94,7 @@ export default function Login() {
                   value={form.email}
                   onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
                   className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
-                  placeholder="you@example.com"
+                  placeholder={t('emailPlaceholder')}
                   autoComplete="email"
                   required
                 />
@@ -99,7 +102,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-gray-300 mb-2 font-medium">Password</label>
+              <label className="block text-gray-300 mb-2 font-medium">{t('password')}</label>
               <div className="relative">
                 <i className="bx bx-lock-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 <input
@@ -107,7 +110,7 @@ export default function Login() {
                   value={form.password}
                   onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
                   className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
-                  placeholder="Enter your password"
+                  placeholder={t('passwordPlaceholder')}
                   autoComplete="current-password"
                   required
                 />
@@ -133,12 +136,12 @@ export default function Login() {
               {isSubmitting ? (
                 <>
                   <i className="bx bx-loader-alt animate-spin"></i>
-                  Signing in...
+                  {t('signingIn')}
                 </>
               ) : (
                 <>
                   <i className="bx bx-log-in"></i>
-                  Sign In
+                  {t('signIn')}
                 </>
               )}
             </button>
@@ -147,14 +150,14 @@ export default function Login() {
           {/* Footer */}
           <div className="text-center mt-8 pt-6 border-t border-gray-700">
             <p className="text-gray-400">
-              Don't have an account?{' '}
+              {t('dontHaveAccount')}{' '}
               <Link to="/register" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
-                Sign up here
+                {t('signUp')}
               </Link>
             </p>
             <p className="text-gray-500 text-sm mt-2">
               <Link to="/verify" className="hover:text-gray-400 transition-colors">
-                Or verify a certificate
+                {t('qaVerify')}
               </Link>
             </p>
           </div>
@@ -164,12 +167,12 @@ export default function Login() {
         <div className="mt-6 bg-gray-900/50 backdrop-blur-md border border-gray-700/50 rounded-xl p-4">
           <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
             <i className="bx bx-info-circle text-blue-400"></i>
-            Demo Credentials
+            {t('demoCredentials')}
           </h3>
           <div className="text-sm text-gray-300 space-y-1">
-            <p><span className="text-gray-400">Learner:</span> learner@example.com / password123</p>
-            <p><span className="text-gray-400">Institute:</span> institute@example.com / password123</p>
-            <p><span className="text-gray-400">Admin:</span> admin@example.com / password123</p>
+            <p><span className="text-gray-400">{t('learner')}:</span> learner@example.com / password123</p>
+            <p><span className="text-gray-400">{t('institute')}:</span> institute@example.com / password123</p>
+            <p><span className="text-gray-400">{t('admin')}:</span> admin@example.com / password123</p>
           </div>
         </div>
       </div>

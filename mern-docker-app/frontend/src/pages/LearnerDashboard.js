@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../services/api";
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function LearnerDashboard({ token }) {
+  const { t } = useLanguage();
   // Use token from props or fallback to localStorage (handles direct page loads)
   const effectiveToken = token || localStorage.getItem("token");
   const [profile, setProfile] = useState(null);
@@ -99,7 +101,7 @@ export default function LearnerDashboard({ token }) {
     if (!uploadForm.courseId || !uploadForm.moduleTitle || !uploadForm.file) {
       setUploadStatus({
         submitting: false,
-        message: "Course, module title, and proof file are required.",
+        message: t('proofRequired'),
         tone: "error",
       });
       return;
@@ -122,7 +124,7 @@ export default function LearnerDashboard({ token }) {
     if (!response.ok) {
       setUploadStatus({
         submitting: false,
-        message: response.data?.message || "Failed to submit proof.",
+        message: response.data?.message || t('proofFailed'),
         tone: "error",
       });
       return;
@@ -131,7 +133,7 @@ export default function LearnerDashboard({ token }) {
     setProofs((prev) => [response.data.proof, ...prev]);
     setUploadStatus({
       submitting: false,
-      message: "Proof submitted for review.",
+      message: t('proofSubmitted'),
       tone: "success",
     });
     setUploadForm({ courseId: "", moduleTitle: "", notes: "", file: null });
@@ -141,9 +143,9 @@ export default function LearnerDashboard({ token }) {
   if (!effectiveToken) {
     return (
       <div className="card form-card">
-        <h3>Learner dashboard</h3>
+        <h3>{t('learnerDashboard')}</h3>
         <p className="empty-state">
-          Sign in to view your learner profile and issued credentials.
+          {t('signInToViewProfile')}
         </p>
       </div>
     );
@@ -151,14 +153,14 @@ export default function LearnerDashboard({ token }) {
 
   return (
     <div className="dashboard">
-      <h3 className="section-title">Issued certificates</h3>
+      <h3 className="section-title">{t('issuedCertificates')}</h3>
       {status.error && <p className="form-feedback error">{status.error}</p>}
 
       {status.loading && certificates.length === 0 && (
-        <p className="empty-state">Loading certificates…</p>
+        <p className="empty-state">{t('loadingCertificates')}</p>
       )}
       {!status.loading && certificates.length === 0 && (
-        <p className="empty-state">No certificates issued yet.</p>
+        <p className="empty-state">{t('noCertificatesIssued')}</p>
       )}
 
       {certificates.length > 0 && (
@@ -168,7 +170,7 @@ export default function LearnerDashboard({ token }) {
             const courseTitle =
               certificate.course?.title ||
               certificate.courseName ||
-              "Certificate";
+              t('certificate');
             const studentCode =
               certificate.studentUniqueCode || certificate.uniqueId || certId;
             const issueDate =
@@ -199,7 +201,7 @@ export default function LearnerDashboard({ token }) {
                 console.error("Certificate download error:", err);
                 setStatus((prev) => ({
                   ...prev,
-                  error: "Unable to download certificate. Please try again.",
+                  error: t('downloadFailed'),
                 }));
               }
             };
@@ -209,19 +211,19 @@ export default function LearnerDashboard({ token }) {
                 <div>
                   <div className="cert-title">{courseTitle}</div>
                   <div className="cert-meta">
-                    ID: <span className="font-mono">{certId}</span>
+                    {t('certificateId')}: <span className="font-mono">{certId}</span>
                   </div>
                   <div className="cert-meta">
-                    Student ID: <span className="font-mono">{studentCode}</span>
+                    {t('studentId')}: <span className="font-mono">{studentCode}</span>
                   </div>
                   <div className="cert-meta">
-                    Issued{" "}
+                    {t('issued')}{" "}
                     {issueDate ? new Date(issueDate).toLocaleDateString() : "—"}
                   </div>
                 </div>
                 <div className="cert-actions">
                   <button onClick={downloadCertificate} className="btn">
-                    Download PDF
+                    {t('downloadPDF')}
                   </button>
                 </div>
               </article>

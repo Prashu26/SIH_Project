@@ -1,4 +1,5 @@
 import React from "react";
+import { useLanguage } from '../contexts/LanguageContext';
 
 const teamMembers = [
   {
@@ -16,6 +17,7 @@ const teamMembers = [
 ];
 
 export default function Team() {
+  const { t } = useLanguage();
   return (
     <div className="w-full">
 
@@ -34,7 +36,7 @@ export default function Team() {
         {/* text content */}
         <div className="relative max-w-6xl mx-auto px-6 lg:px-12">
           <h1 className="text-5xl lg:text-6xl font-bold text-white max-w-[550px]">
-            Our powerhouse team of experts and supporters
+            {t('ourTeam')}
           </h1>
         </div>
       </section>
@@ -42,7 +44,7 @@ export default function Team() {
       {/* TEAM SECTION */}
       <section className="py-20">
         <h2 className="text-3xl font-semibold text-center mb-14">
-          Our team
+          {t('ourTeam')}
         </h2>
 
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12">
