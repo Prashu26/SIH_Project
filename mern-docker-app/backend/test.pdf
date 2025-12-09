@@ -1,0 +1,1 @@
+Proxy error: Could not proxy request /api/templates/debug/test-pdf from localhost:3000 to http://localhost:8080 (ECONNREFUSED).

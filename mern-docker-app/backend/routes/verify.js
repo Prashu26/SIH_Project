@@ -42,12 +42,8 @@ router.get('/:certificateId', async (req, res) => {
       console.log('❌ Certificate not found in database');
       return res.status(404).json({
         success: false,
-        status: 'Not Found',
-        message: 'Certificate not found',
-        debug: {
-          searchedFor: certificateId,
-          availableCertificates: allCerts.map(c => c.certificateId)
-        }
+        status: 'NOT VERIFIED',
+        message: 'Certificate not found'
       });
     }
     
@@ -61,26 +57,8 @@ router.get('/:certificateId', async (req, res) => {
       console.log('⚠️ Certificate not anchored on blockchain');
       return res.status(202).json({
         success: false,
-        status: 'Not Anchored',
-        message: 'Certificate has been issued but not yet anchored on the blockchain. Blockchain anchoring is disabled in this deployment.',
-        certificate: {
-          certificateId: certificate.certificateId,
-          learner: certificate.learner,
-          course: certificate.course,
-          institute: certificate.institute,
-          issueDate: certificate.issueDate,
-          validUntil: certificate.validUntil,
-          status: certificate.status,
-          ncvqLevel: certificate.ncvqLevel,
-          ncvqQualificationTitle: certificate.ncvqQualificationTitle
-        },
-        blockchain: {
-          verified: false,
-          reason: 'Not anchored - blockchain features disabled',
-          merkleRoot: certificate.merkleRoot || null,
-          batchId: certificate.batchId || null,
-          blockchainTxHash: certificate.blockchainTxHash || null
-        }
+        status: 'NOT VERIFIED',
+        message: 'Certificate not verified on blockchain'
       });
     }
     
@@ -100,78 +78,16 @@ router.get('/:certificateId', async (req, res) => {
       
       return res.status(statusCode).json({
         success: result.valid,
-        status: result.valid ? 'Valid' : 'Invalid',
-        message: result.reason || 'Certificate is valid',
-        certificate: {
-          certificateId: certificate.certificateId,
-          learner: certificate.learner,
-          course: certificate.course,
-          institute: certificate.institute,
-          issueDate: certificate.issueDate,
-          validUntil: certificate.validUntil,
-          status: certificate.status,
-          ncvqLevel: certificate.ncvqLevel,
-          ncvqQualificationTitle: certificate.ncvqQualificationTitle,
-          // Extended Details
-          fatherName: certificate.fatherName,
-          motherName: certificate.motherName,
-          dob: certificate.dob,
-          address: certificate.address,
-          district: certificate.district,
-          state: certificate.state,
-          trade: certificate.trade,
-          duration: certificate.duration,
-          session: certificate.session,
-          testMonth: certificate.testMonth,
-          testYear: certificate.testYear
-        },
-        blockchain: {
-          verified: result.isValid,
-          localVerification: result.localVerification,
-          merkleRoot: result.certificate?.merkleRoot,
-          batchId: result.certificate?.batchId,
-          blockchainTxHash: result.blockchainTxHash,
-          onChainRoot: result.onChainRoot
-        }
+        status: result.valid ? 'VERIFIED' : 'NOT VERIFIED',
+        message: result.valid ? 'Certificate is verified' : 'Certificate verification failed'
       });
     } catch (blockchainError) {
       console.error('❌ Blockchain verification failed:', blockchainError.message);
       
-      // Fallback: return certificate info even if blockchain verification fails
-      return res.status(200).json({
-        success: true,
-        status: 'Issued',
-        message: 'Certificate is valid (blockchain verification unavailable)',
-        certificate: {
-          certificateId: certificate.certificateId,
-          learner: certificate.learner,
-          course: certificate.course,
-          institute: certificate.institute,
-          issueDate: certificate.issueDate,
-          validUntil: certificate.validUntil,
-          status: certificate.status,
-          ncvqLevel: certificate.ncvqLevel,
-          ncvqQualificationTitle: certificate.ncvqQualificationTitle,
-          // Extended Details
-          fatherName: certificate.fatherName,
-          motherName: certificate.motherName,
-          dob: certificate.dob,
-          address: certificate.address,
-          district: certificate.district,
-          state: certificate.state,
-          trade: certificate.trade,
-          duration: certificate.duration,
-          session: certificate.session,
-          testMonth: certificate.testMonth,
-          testYear: certificate.testYear
-        },
-        blockchain: {
-          verified: false,
-          error: blockchainError.message,
-          merkleRoot: certificate.merkleRoot,
-          batchId: certificate.batchId,
-          blockchainTxHash: certificate.blockchainTxHash
-        }
+      return res.status(400).json({
+        success: false,
+        status: 'NOT VERIFIED',
+        message: 'Blockchain verification failed: ' + blockchainError.message
       });
     }
   } catch (error) {
@@ -228,9 +144,9 @@ router.post('/hash', async (req, res) => {
         
         return res.json({
           success: localVerification && (onChainResult ? onChainResult.isValid : true),
-          status: localVerification ? 'Valid' : 'Invalid',
-          message: localVerification 
-            ? 'Certificate hash is cryptographically valid'
+          status: localVerification && (onChainResult ? onChainResult.isValid : true) ? 'VERIFIED' : 'NOT VERIFIED',
+          message: localVerification && (onChainResult ? onChainResult.isValid : true)
+            ? 'Certificate is verified on blockchain'
             : 'Certificate verification failed',
           blockchain: {
             verified: localVerification && (onChainResult ? onChainResult.isValid : true),
@@ -299,20 +215,35 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const fileHash = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
     const formattedHash = '0x' + fileHash;
     
-    console.log(`🔍 Verification request for uploaded file (hash: ${formattedHash})`);
+    console.log(`🔍 Verification request for uploaded file`);
+    console.log(`📊 File hash (with 0x): ${formattedHash}`);
+    console.log(`📊 File hash (without 0x): ${fileHash}`);
 
-    // Find certificate by artifact hash (PDF hash)
-    let certificate = await Certificate.findOne({ artifactHash: formattedHash })
+    // Find certificate by artifact hash (PDF hash) - try multiple formats
+    let certificate = await Certificate.findOne({ 
+      $or: [
+        { artifactHash: formattedHash },
+        { artifactHash: fileHash },
+        { pdfHash: formattedHash },
+        { pdfHash: fileHash },
+        { sha256: formattedHash },
+        { sha256: fileHash }
+      ]
+    })
       .populate('learner', 'name email')
       .populate('course', 'title')
       .populate('institute', 'name');
     
     if (!certificate) {
-      // Try metadata hash as fallback
-      certificate = await Certificate.findOne({ metadataHash: formattedHash })
-        .populate('learner', 'name email')
-        .populate('course', 'title')
-        .populate('institute', 'name');
+      console.log(`❌ No certificate found matching hash ${formattedHash}`);
+      // Debug: show some certificate hashes
+      const samples = await Certificate.find({}).select('certificateId artifactHash pdfHash sha256').limit(3);
+      console.log('📋 Sample certificate hashes in DB:', samples.map(c => ({
+        id: c.certificateId,
+        artifactHash: c.artifactHash,
+        pdfHash: c.pdfHash,
+        sha256: c.sha256
+      })));
     }
 
     if (!certificate) {
@@ -473,6 +404,221 @@ router.post('/file', upload.fields([{ name: 'pdf', maxCount: 1 }, { name: 'proof
   } catch (error) {
     logger.error('File verification failed:', error);
     return res.status(500).json({ success: false, message: 'Verification failed', error: error.message });
+  }
+});
+
+/**
+ * POST /api/verify/batch
+ * Batch verify multiple PDFs at once (up to 1000)
+ * Expects: multipart/form-data with multiple files
+ */
+router.post('/batch', upload.array('files', 1000), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please upload at least one certificate file' 
+      });
+    }
+
+    console.log(`🔍 Batch verification request for ${req.files.length} files`);
+    const startTime = Date.now();
+
+    // Process all files in parallel for speed
+    const results = await Promise.all(
+      req.files.map(async (file, index) => {
+        try {
+          // Calculate file hash
+          const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+          const formattedHash = '0x' + fileHash;
+          
+          // Find certificate by hash
+          const certificate = await Certificate.findOne({ 
+            $or: [
+              { artifactHash: formattedHash },
+              { artifactHash: fileHash },
+              { pdfHash: formattedHash },
+              { pdfHash: fileHash },
+              { sha256: formattedHash },
+              { sha256: fileHash }
+            ]
+          }).select('certificateId pdfHash sha256 artifactHash merkleRoot batchId merkleProof status');
+          
+          if (!certificate) {
+            return {
+              index: index + 1,
+              filename: file.originalname,
+              fileHash: formattedHash,
+              status: 'NOT VERIFIED',
+              success: false,
+              message: 'Certificate not found in database'
+            };
+          }
+
+          // Quick verification - check if hash matches
+          const hashMatches = 
+            certificate.pdfHash === formattedHash || 
+            certificate.pdfHash === fileHash ||
+            certificate.artifactHash === formattedHash ||
+            certificate.artifactHash === fileHash ||
+            certificate.sha256 === formattedHash ||
+            certificate.sha256 === fileHash;
+
+          if (hashMatches) {
+            return {
+              index: index + 1,
+              filename: file.originalname,
+              certificateId: certificate.certificateId,
+              fileHash: formattedHash,
+              status: 'VERIFIED',
+              success: true,
+              message: 'Certificate is verified'
+            };
+          } else {
+            return {
+              index: index + 1,
+              filename: file.originalname,
+              fileHash: formattedHash,
+              status: 'NOT VERIFIED',
+              success: false,
+              message: 'Hash mismatch - document may be tampered'
+            };
+          }
+
+        } catch (error) {
+          logger.error(`Error verifying file ${index + 1}:`, error);
+          return {
+            index: index + 1,
+            filename: file.originalname,
+            status: 'ERROR',
+            success: false,
+            message: error.message || 'Verification error'
+          };
+        }
+      })
+    );
+
+    const endTime = Date.now();
+    const processingTime = ((endTime - startTime) / 1000).toFixed(2);
+
+    // Calculate statistics
+    const verified = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+
+    console.log(`✅ Batch verification complete: ${verified} verified, ${failed} failed in ${processingTime}s`);
+
+    return res.json({
+      success: true,
+      message: `Processed ${req.files.length} certificates in ${processingTime} seconds`,
+      statistics: {
+        total: req.files.length,
+        verified: verified,
+        notVerified: failed,
+        processingTimeSeconds: processingTime,
+        averageTimePerFile: (parseFloat(processingTime) / req.files.length).toFixed(3)
+      },
+      results: results
+    });
+
+  } catch (error) {
+    logger.error('Batch verification failed:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Batch verification failed', 
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * POST /api/verify/batch-ids
+ * Batch verify by certificate IDs (faster than file upload)
+ * Expects: { certificateIds: ["CERT-1", "CERT-2", ...] }
+ */
+router.post('/batch-ids', async (req, res) => {
+  try {
+    const { certificateIds } = req.body;
+
+    if (!certificateIds || !Array.isArray(certificateIds) || certificateIds.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please provide an array of certificate IDs' 
+      });
+    }
+
+    if (certificateIds.length > 10000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Maximum 10,000 certificate IDs per request' 
+      });
+    }
+
+    console.log(`🔍 Batch ID verification request for ${certificateIds.length} certificates`);
+    const startTime = Date.now();
+
+    // Find all certificates in one query (much faster)
+    const certificates = await Certificate.find({ 
+      certificateId: { $in: certificateIds } 
+    }).select('certificateId status merkleRoot batchId');
+
+    // Create a map for fast lookup
+    const certMap = new Map();
+    certificates.forEach(cert => {
+      certMap.set(cert.certificateId, cert);
+    });
+
+    // Build results
+    const results = certificateIds.map((id, index) => {
+      const cert = certMap.get(id);
+      
+      if (!cert) {
+        return {
+          index: index + 1,
+          certificateId: id,
+          status: 'NOT VERIFIED',
+          success: false,
+          message: 'Certificate not found'
+        };
+      }
+
+      return {
+        index: index + 1,
+        certificateId: id,
+        status: 'VERIFIED',
+        success: true,
+        message: 'Certificate is verified',
+        certificateStatus: cert.status
+      };
+    });
+
+    const endTime = Date.now();
+    const processingTime = ((endTime - startTime) / 1000).toFixed(2);
+
+    const verified = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+
+    console.log(`✅ Batch ID verification complete: ${verified} verified, ${failed} failed in ${processingTime}s`);
+
+    return res.json({
+      success: true,
+      message: `Verified ${certificateIds.length} certificate IDs in ${processingTime} seconds`,
+      statistics: {
+        total: certificateIds.length,
+        verified: verified,
+        notVerified: failed,
+        processingTimeSeconds: processingTime,
+        averageTimePerCertificate: (parseFloat(processingTime) / certificateIds.length).toFixed(4)
+      },
+      results: results
+    });
+
+  } catch (error) {
+    logger.error('Batch ID verification failed:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Batch verification failed', 
+      error: error.message 
+    });
   }
 });
 

@@ -59,17 +59,8 @@ export default function Verify() {
       const res = await fetch(`${API_BASE}/api/verify/${encodeURIComponent(query.trim())}`);
       const data = await res.json();
       if (!res.ok && res.status === 404) { setError('Certificate not found.'); setIsLoading(false); return; }
-      if (!res.ok && res.status === 202) {
-        setResult({ ...data, status: 'Not Anchored', message: 'Valid but not yet anchored' });
-        setIsLoading(false); return;
-      }
       if (!res.ok) { setError(data.message || 'Certificate could not be verified.'); setIsLoading(false); return; }
-      setResult({
-        ...data,
-        status: data.success ? (data.status === 'Valid' ? 'Authentic' : data.status) : 'Invalid',
-        certificate: { ...data.certificate, blockchainVerified: data.blockchain?.verified || false },
-        blockchain: data.blockchain
-      });
+      setResult(data);
     } catch (err) {
       setError(err.message || 'Unexpected error while verifying.');
     } finally { setIsLoading(false); }
@@ -96,12 +87,7 @@ export default function Verify() {
       const data = await res.json();
       if (!res.ok && res.status === 404) setError('No certificate matches the uploaded file.');
       else if (!res.ok) setError(data.message || 'Verification failed');
-      else setResult({
-        ...data,
-        status: data.success ? (data.status === 'Valid' ? 'Authentic' : data.status) : 'Invalid',
-        certificate: { ...data.certificate, blockchainVerified: data.blockchain?.verified || false, fileHash: data.fileHash },
-        blockchain: data.blockchain
-      });
+      else setResult(data);
     } catch (err) {
       setError(err.message || 'Unexpected error while verifying file.');
     } finally { setIsLoading(false); }
@@ -110,24 +96,67 @@ export default function Verify() {
   // Drag & drop handlers
   const onDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setError('');
+    setResult(null);
     const f = (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) || null;
     if (f) {
       setFile(f);
-      // slight delay to ensure state updated, then call upload
-      setTimeout(() => {
-        uploadFile();
-      }, 120);
+      // immediate upload with the file
+      setIsLoading(true);
+      const form = new FormData();
+      form.append('file', f);
+      fetch(`${API_BASE}/api/verify/upload`, { method: 'POST', body: form })
+        .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data })))
+        .then(({ ok, status, data }) => {
+          if (!ok && status === 404) {
+            setError('No certificate matches the uploaded file.');
+            setResult(null);
+          } else if (!ok) {
+            setError(data.message || 'Verification failed');
+            setResult(null);
+          } else {
+            setResult(data);
+            setError('');
+          }
+        })
+        .catch(err => {
+          setError(err.message || 'Unexpected error while verifying file.');
+          setResult(null);
+        })
+        .finally(() => setIsLoading(false));
     }
   };
 
   const onFileSelected = (e) => {
     setError('');
+    setResult(null);
     const f = e.target.files && e.target.files[0];
     if (f) {
       setFile(f);
-      // auto upload
-      setTimeout(() => uploadFile(), 120);
+      // immediate upload with the file
+      setIsLoading(true);
+      const form = new FormData();
+      form.append('file', f);
+      fetch(`${API_BASE}/api/verify/upload`, { method: 'POST', body: form })
+        .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data })))
+        .then(({ ok, status, data }) => {
+          if (!ok && status === 404) {
+            setError('No certificate matches the uploaded file.');
+            setResult(null);
+          } else if (!ok) {
+            setError(data.message || 'Verification failed');
+            setResult(null);
+          } else {
+            setResult(data);
+            setError('');
+          }
+        })
+        .catch(err => {
+          setError(err.message || 'Unexpected error while verifying file.');
+          setResult(null);
+        })
+        .finally(() => setIsLoading(false));
     }
   };
 
@@ -231,63 +260,19 @@ export default function Verify() {
               <label className="block text-sm text-sky-200 mb-2">Upload Certificate (PDF)</label>
 
               <div
-                onDragOver={(e) => { e.preventDefault(); }}
-                onDragEnter={(e) => { e.preventDefault(); }}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); }}
                 onDrop={onDrop}
                 onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                className="relative w-72 h-72 mx-auto cursor-pointer select-none"
+                className="relative w-full max-w-md mx-auto cursor-pointer select-none border-2 border-dashed border-sky-400/50 rounded-xl p-12 bg-sky-900/20 hover:bg-sky-900/30 hover:border-sky-400 transition-all"
                 title="Click to choose a file or drag & drop here"
               >
-                {/* animated cube + particles */}
-                <style>{`
-                  .vp-perspective { perspective: 900px; }
-                  .vp-cube {
-                    width: 160px; height: 160px; transform-style: preserve-3d;
-                    transform-origin: center; animation: vp-rotate 8s linear infinite;
-                    transition: transform .3s ease;
-                  }
-                  .vp-cube:hover { animation-play-state: paused; transform: translateY(-6px) rotateX(6deg) rotateY(-6deg); }
-                  .vp-face {
-                    position: absolute; inset: 0; border-radius: 12px;
-                    display:flex; align-items:center; justify-content:center;
-                    font-weight:700; color: #fff; text-shadow: 0 6px 20px rgba(0,0,0,0.45);
-                  }
-                  .vp-face.front { background: linear-gradient(135deg,#ef3b6d,#c21a75); transform: translateZ(80px); }
-                  .vp-face.right { background: linear-gradient(135deg,#c21a75,#8b2b6c); transform: rotateY(90deg) translateZ(80px); }
-                  .vp-face.top { background: linear-gradient(135deg,#ff7aa3,#c21a75); transform: rotateX(90deg) translateZ(80px); }
-                  @keyframes vp-rotate { 0%{ transform: rotateX(10deg) rotateY(0deg); } 50%{ transform: rotateX(-10deg) rotateY(180deg); } 100%{ transform: rotateX(10deg) rotateY(360deg); } }
-                  .vp-glow { position:absolute; inset: -18px; border-radius: 16px; filter: blur(18px); opacity: 0.9; mix-blend-mode: screen; pointer-events:none; }
-                  .vp-spark { width:4px; height:4px; background:white; border-radius:999px; position:absolute; opacity:.85; box-shadow:0 0 8px white; animation: vp-spark 3s linear infinite; }
-                  @keyframes vp-spark {
-                    0%{ transform: translateY(0) scale(.8); opacity:.9 } 50%{ transform: translateY(-18px) scale(1.1); opacity:.6 } 100%{ transform: translateY(0) scale(.8); opacity:.9 }
-                  }
-                `}</style>
-
-                <div className="absolute inset-0 flex items-center justify-center vp-perspective">
-                  <div className="vp-cube" aria-hidden>
-                    <div className="vp-face front flex-col">
-                      <div className="text-3xl">DRAG</div>
-                      <div className="text-5xl font-extrabold my-1"> & </div>
-                      <div className="text-3xl">DROP</div>
-                    </div>
-                    <div className="vp-face right"></div>
-                    <div className="vp-face top"></div>
-                  </div>
-                </div>
-
-                {/* glow behind cube */}
-                <div className="vp-glow" style={{ background: 'radial-gradient(closest-side, rgba(99,102,241,0.18), transparent 40%)' }} />
-
-                {/* decorative small sparks */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="vp-spark" style={{ left: '14%', top: '20%', animationDelay: '0s' }} />
-                  <div className="vp-spark" style={{ left: '78%', top: '30%', animationDelay: '0.6s' }} />
-                  <div className="vp-spark" style={{ left: '50%', top: '72%', animationDelay: '1.2s' }} />
-                </div>
-
-                {/* overlay label */}
-                <div className="absolute inset-0 rounded-xl flex flex-col items-center justify-end pb-6 text-center text-sky-100 font-medium pointer-events-none">
-                  <div className="text-sm opacity-80">Click or drop a PDF to verify</div>
+                {/* Upload Icon */}
+                <div className="text-center">
+                  <div className="text-6xl mb-4">📄</div>
+                  <div className="text-xl font-bold text-sky-100 mb-2">Upload PDF</div>
+                  <div className="text-sm text-sky-200/70">Click to browse or drag and drop your certificate here</div>
                 </div>
 
                 {/* hidden file input */}
@@ -300,42 +285,30 @@ export default function Verify() {
                   className="hidden"
                 />
               </div>
-               <p className="text-xs text-sky-300/70 mt-3 text-center">Drop a PDF certificate here or click the box to choose a file. Verification runs automatically.</p>
-             </div>
+              <p className="text-xs text-sky-300/70 mt-3 text-center">Drop a PDF certificate here or click the box to choose a file. Verification runs automatically.</p>
+            </div>
 
             {/* Errors + Result */}
             {error && <p className="text-rose-400 mt-4">{error}</p>}
 
             {result && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-black/30 rounded-lg p-4 border border-slate-700/30">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-semibold text-sky-100">Verification Result</h4>
-                    <StatusBadge status={result.status} />
+              <div className="mt-8 flex items-center justify-center">
+                <div className="bg-black/30 rounded-2xl p-12 border-4 text-center" style={{
+                  borderColor: result.success ? '#10b981' : '#ef4444'
+                }}>
+                  <div className="text-6xl font-bold mb-4" style={{
+                    color: result.success ? '#10b981' : '#ef4444'
+                  }}>
+                    {result.success ? '✓' : '✗'}
                   </div>
-
-                  <div className="mt-3 text-sm text-sky-200/80">
-                    {result.message && <p className="mb-2">{result.message}</p>}
-                    <p><span className="font-semibold">Certificate ID:</span> {result.certificate?.certificateId || '—'}</p>
-                    <p><span className="font-semibold">Name:</span> {result.certificate?.learner?.name || result.certificate?.student_name || '—'}</p>
-                    {result.certificate?.fatherName && <p><span className="font-semibold">Father's Name:</span> {result.certificate.fatherName}</p>}
-                    {result.certificate?.motherName && <p><span className="font-semibold">Mother's Name:</span> {result.certificate.motherName}</p>}
-                    {result.certificate?.dob && <p><span className="font-semibold">DOB:</span> {result.certificate.dob}</p>}
-                    <p><span className="font-semibold">Course/Trade:</span> {result.certificate?.course?.title || result.certificate?.trade || '—'}</p>
-                    <p><span className="font-semibold">Institute:</span> {result.certificate?.institute?.name || result.certificate?.institute_name || '—'}</p>
-                    {result.certificate?.address && <p><span className="font-semibold">Address:</span> {result.certificate.address}, {result.certificate.district}, {result.certificate.state}</p>}
-                    {result.certificate?.nsqfLevel && <p><span className="font-semibold">NSQF Level:</span> {result.certificate.nsqfLevel}</p>}
-                    {result.certificate?.duration && <p><span className="font-semibold">Duration:</span> {result.certificate.duration}</p>}
-                    {result.certificate?.session && <p><span className="font-semibold">Session:</span> {result.certificate.session}</p>}
-                    {result.certificate?.testMonth && <p><span className="font-semibold">Test Period:</span> {result.certificate.testMonth} {result.certificate.testYear}</p>}
-                    <p><span className="font-semibold">Anchored on Chain:</span> {result.blockchain?.verified ? 'Yes' : 'No'}</p>
-                    {result.certificate?.fileHash && <p className="break-all"><span className="font-semibold">File Hash:</span> {result.certificate.fileHash}</p>}
+                  <div className="text-4xl font-extrabold tracking-wider" style={{
+                    color: result.success ? '#10b981' : '#ef4444'
+                  }}>
+                    {result.status}
                   </div>
-                </div>
-
-                <div className="bg-black/20 rounded-lg p-4 border border-slate-700/20 max-h-72 overflow-auto">
-                  <h5 className="text-sm text-sky-100 font-semibold mb-2">Raw JSON</h5>
-                  <pre className="text-xs text-sky-100/90">{JSON.stringify(result, null, 2)}</pre>
+                  <div className="text-lg text-sky-200 mt-4">
+                    {result.message}
+                  </div>
                 </div>
               </div>
             )}

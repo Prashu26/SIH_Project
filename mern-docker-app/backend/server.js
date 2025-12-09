@@ -78,6 +78,7 @@ const adminRoutes = require('./routes/admin');
 const courseRoutes = require('./routes/courses');
 const issuerRoutes = require('./routes/issuer');
 const certificateRoutes = require('./routes/certificates');
+const templateRoutes = require('./routes/templates');
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/artifacts', express.static(path.join(__dirname, 'generated')));
@@ -92,6 +93,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/issuer', issuerRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/templates', templateRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

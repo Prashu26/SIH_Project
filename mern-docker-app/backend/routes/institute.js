@@ -478,7 +478,39 @@ router.post(
             institute: req.user.id,
             modules: modulesList.length > 0 ? modulesList : ["Core Module"],
           });
-          await course.save();
+
+          // Defensive: ensure we do not persist an explicit null/empty courseCode value.
+          // Existing data may have documents with `courseCode: null` which can trigger
+          // unique-index duplicate key errors when inserting another doc that also
+          // ends up storing an explicit null. Delete the property if it's null/empty.
+          if (Object.prototype.hasOwnProperty.call(course, "courseCode")) {
+            if (course.courseCode === null || course.courseCode === "") {
+              delete course.courseCode;
+            }
+          }
+
+          try {
+            await course.save();
+          } catch (saveErr) {
+            // If we hit a duplicate key error complaining about courseCode:null,
+            // try removing the courseCode field and retry saving. This can occur
+            // if historical records explicitly stored `courseCode: null` and the
+            // sparse unique index treats null as a value.
+            if (saveErr && saveErr.code === 11000 && saveErr.keyPattern && saveErr.keyPattern.courseCode) {
+              if (Object.prototype.hasOwnProperty.call(course, "courseCode")) {
+                delete course.courseCode;
+              }
+              try {
+                await course.save();
+              } catch (retryErr) {
+                console.error("Create course retry error:", retryErr);
+                throw retryErr;
+              }
+            } else {
+              console.error("Create course error:", saveErr);
+              throw saveErr;
+            }
+          }
         }
       }
 
@@ -515,6 +547,8 @@ router.post(
 
       const certificateId = `CERT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
+      const templateIdToUse = req.body.templateId || req.body.template || null;
+
       const { certificate } = await certificateService.issueCertificate({
         certificateId,
         studentUniqueCode: finalLearnerId,
@@ -531,6 +565,7 @@ router.post(
         ncvqQualificationTitle: null,
         ncvqQualificationType: null,
         status: "Issued",
+        templateId: templateIdToUse,
       });
 
       // Attempt to send congratulation email with PDF attachment

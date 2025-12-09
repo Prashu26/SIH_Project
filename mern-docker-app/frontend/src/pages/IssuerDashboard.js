@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import API_BASE, { apiFetch } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import "boxicons/css/boxicons.min.css";
+import CertificateTemplateEditor from "../components/CertificateTemplateEditor";
 
 const CHAIN_LABELS = {
   "0x1": "Ethereum Mainnet",
@@ -35,6 +36,23 @@ export default function IssuerDashboard() {
   const [statistics, setStatistics] = useState(null);
   const [certificates, setCertificates] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [activeTemplate, setActiveTemplate] = useState(null);
+  // Local sample template (used for preview only)
+  const sampleTemplate = {
+    _id: '__SAMPLE__',
+    name: 'Sample Certificate Template',
+    backgroundPath: null,
+    defaultFont: 'Georgia',
+    defaultFontSize: 20,
+    fields: [
+      { key: 'learnerName', type: 'text', text: '', fontFamily: 'Georgia', fontSize: 24, color: '#111827', xPct: 50, yPct: 30, zIndex: 2 },
+      { key: 'courseName', type: 'text', text: '', fontFamily: 'Georgia', fontSize: 22, color: '#111827', xPct: 50, yPct: 45, zIndex: 2 },
+      { key: 'skillsAcquired', type: 'text', text: '', fontFamily: 'Georgia', fontSize: 14, color: '#6b7280', xPct: 50, yPct: 55, zIndex: 2 },
+      { key: 'certificateId', type: 'text', text: '', fontFamily: 'Georgia', fontSize: 12, color: '#9ca3af', xPct: 50, yPct: 85, zIndex: 2 }
+    ],
+    watermark: { invisible: true, text: 'ISSUED_BY_SAMPLE', opacity: 0.02 }
+  };
   const [proofs, setProofs] = useState([]);
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -42,26 +60,14 @@ export default function IssuerDashboard() {
 
   // Form states
   const [singleCertForm, setSingleCertForm] = useState({
+    learnerName: "",
     learnerEmail: "",
     learnerId: "",
     courseId: "",
     courseName: "",
     skillsAcquired: "",
     validUntil: "",
-    nsqfLevel: "",
-    ncvqQualificationCode: "",
-    // New Fields
-    fatherName: "",
-    motherName: "",
-    dob: "",
-    address: "",
-    district: "",
-    state: "",
-    trade: "",
-    duration: "",
-    session: "",
-    testMonth: "",
-    testYear: "",
+    templateId: "",
   });
 
   const [courseForm, setCourseForm] = useState({
@@ -74,6 +80,8 @@ export default function IssuerDashboard() {
 
   const [batchFile, setBatchFile] = useState(null);
   const [certFile, setCertFile] = useState(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
+  const [batchTemplateId, setBatchTemplateId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [batchResults, setBatchResults] = useState(null);
   const [metamaskAccount, setMetamaskAccount] = useState(null);
@@ -84,6 +92,27 @@ export default function IssuerDashboard() {
   );
   const [anchorStatus, setAnchorStatus] = useState({ type: "", message: "" });
   const [isAnchoring, setIsAnchoring] = useState(false);
+  // Branding / Customization state
+  const BRANDING_KEY = `issuer_branding_${user?.id || user?._id || "default"}`;
+  const defaultBranding = {
+    headerText: "Issuer Dashboard",
+    subText: `Welcome back, ${user?.name || "Institute"}`,
+    showLogo: true,
+    logoDataUrl: "",
+    logoUrl: "",
+    primaryColor: "#3b82f6",
+    accentColor: "#8b5cf6",
+    background: "linear-gradient(180deg,#0f172a,#042f5f)",
+    customCss: "",
+  };
+  const [branding, setBranding] = useState(() => {
+    try {
+      const raw = localStorage.getItem(BRANDING_KEY);
+      return raw ? JSON.parse(raw) : defaultBranding;
+    } catch (e) {
+      return defaultBranding;
+    }
+  });
 
   const displayChainName = chainId
     ? `${CHAIN_LABELS[chainId] || "Unknown Network"} (${chainId})`
@@ -143,6 +172,20 @@ export default function IssuerDashboard() {
     }
   }, [token]);
 
+  // Load templates for this institute
+  const loadTemplates = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      const response = await apiFetch("/api/templates", { token });
+      if (response.ok) {
+        setTemplates(response.data.templates || response.data || []);
+      }
+    } catch (error) {
+      console.error("Templates load error:", error);
+    }
+  }, [token]);
+
   // Load proofs
   const loadProofs = useCallback(async () => {
     if (!token) return;
@@ -181,10 +224,16 @@ export default function IssuerDashboard() {
       navigate("/login");
       return;
     }
+    // load branding from localStorage in case user changed
+    try {
+      const raw = localStorage.getItem(BRANDING_KEY);
+      if (raw) setBranding(JSON.parse(raw));
+    } catch (e) {}
 
     loadDashboard();
     loadCourses();
-  }, [token, navigate, loadDashboard, loadCourses]);
+    loadTemplates();
+  }, [token, navigate, loadDashboard, loadCourses, loadTemplates]);
 
   // Load data based on active tab
   useEffect(() => {
@@ -271,25 +320,14 @@ export default function IssuerDashboard() {
 
         setFeedback({ type: "success", message: successMessage });
         setSingleCertForm({
+          learnerName: "",
           learnerEmail: "",
           learnerId: "",
           courseId: "",
           courseName: "",
           skillsAcquired: "",
           validUntil: "",
-          nsqfLevel: "",
-          ncvqQualificationCode: "",
-          fatherName: "",
-          motherName: "",
-          dob: "",
-          address: "",
-          district: "",
-          state: "",
-          trade: "",
-          duration: "",
-          session: "",
-          testMonth: "",
-          testYear: "",
+          templateId: "",
         });
         setCertFile(null);
         loadDashboard();
@@ -310,6 +348,243 @@ export default function IssuerDashboard() {
     }
   };
 
+    // Save the currently loaded activeTemplate to the server (if local sample or unsaved)
+    const saveActiveTemplate = async () => {
+      if (!activeTemplate) {
+        setFeedback({ type: "error", message: "No template to save" });
+        return null;
+      }
+
+      // If already persisted (has real _id and not the sample id), return it
+      if (activeTemplate._id && activeTemplate._id !== '__SAMPLE__') {
+        return activeTemplate;
+      }
+
+      try {
+        const body = { ...activeTemplate, institute: user?.id || user?._id };
+        const resp = await apiFetch("/api/templates", {
+          method: "POST",
+          body: JSON.stringify(body),
+          token,
+        });
+
+        if (resp.ok && resp.data) {
+          // refresh templates list
+          await loadTemplates();
+          return resp.data.template || resp.data;
+        }
+
+        setFeedback({ type: "error", message: resp.data?.message || "Failed to save template" });
+        return null;
+      } catch (err) {
+        console.error("Failed to save template:", err);
+        setFeedback({ type: "error", message: "Failed to save template" });
+        return null;
+      }
+    };
+
+    // Save active template (if needed) and issue a single certificate using it
+    const issueUsingActiveTemplate = async () => {
+      setFeedback({ type: "", message: "" });
+      setIsSubmitting(true);
+
+      try {
+        let tpl = activeTemplate;
+        if (!tpl || tpl._id === undefined) {
+          setFeedback({ type: "error", message: "No template selected" });
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (tpl._id === '__SAMPLE__' || !tpl._id) {
+          tpl = await saveActiveTemplate();
+          if (!tpl) {
+            setIsSubmitting(false);
+            return;
+          }
+        }
+
+        // Prepare form data similar to handleSingleCertSubmit
+        const formData = new FormData();
+        Object.keys(singleCertForm).forEach((key) => {
+          if (singleCertForm[key]) formData.append(key, singleCertForm[key]);
+        });
+        formData.append('templateId', tpl._id);
+        if (certFile) formData.append('certificateFile', certFile);
+
+        const response = await apiFetch("/api/institute/certificates", {
+          method: "POST",
+          body: formData,
+          token,
+        });
+
+        if (response.ok) {
+          setFeedback({ type: "success", message: "Certificate issued using template" });
+          setSingleCertForm({
+            learnerName: "",
+            learnerEmail: "",
+            learnerId: "",
+            courseId: "",
+            courseName: "",
+            skillsAcquired: "",
+            validUntil: "",
+            templateId: "",
+          });
+          setCertFile(null);
+          loadDashboard();
+          loadCertificates();
+        } else {
+          setFeedback({ type: "error", message: response.data?.message || "Failed to issue certificate" });
+        }
+      } catch (err) {
+        console.error("Issue using template failed:", err);
+        setFeedback({ type: "error", message: "Network error. Please try again." });
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+  // Create preview URL when a PDF file is selected
+  useEffect(() => {
+    if (!certFile) {
+      // If no uploaded file selected, keep template preview if available
+      if (!singleCertForm.templateId) setPdfPreviewUrl(null);
+      return;
+    }
+
+    try {
+      const url = URL.createObjectURL(certFile);
+      setPdfPreviewUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } catch (e) {
+      setPdfPreviewUrl(null);
+    }
+  }, [certFile]);
+
+  // Fetch template preview when templateId changes (and no uploaded PDF override)
+  useEffect(() => {
+    // Debounced live preview: when template selected, build certificateData by mapping
+    // template fields to current form values and POST to preview endpoint.
+    let cancelled = false;
+    let objectUrl = null;
+    let timer = null;
+
+    async function fetchPreview() {
+      const tid = singleCertForm.templateId;
+      if (!tid || certFile) return;
+
+      try {
+        // Build a basic value map from the form and courses list
+        const courseTitle = singleCertForm.courseName || (courses.find((c) => c._id === singleCertForm.courseId)?.title) || "Course";
+        const inferredName = (singleCertForm.learnerEmail || "").split("@")[0] || "Learner";
+
+        const baseData = {
+          certificateId: `PREVIEW-${Date.now()}`,
+          learnerName: singleCertForm.learnerName || inferredName,
+          learner_email: singleCertForm.learnerEmail || "",
+          studentUniqueCode: singleCertForm.learnerId || "",
+          courseName: courseTitle,
+          issueDate: singleCertForm.validUntil || new Date().toISOString(),
+          validUntil: singleCertForm.validUntil || null,
+          skillsAcquired: singleCertForm.skillsAcquired || "",
+        };
+
+        // If we have the template doc loaded, map its fields to values
+        const payload = { ...baseData };
+        if (activeTemplate && Array.isArray(activeTemplate.fields)) {
+          activeTemplate.fields.forEach((f) => {
+            const key = (f.key || '').toString();
+            // Try several candidate sources for field value
+            const candidates = [
+              // exact keys from baseData
+              baseData[key],
+              baseData[key.toLowerCase()],
+              baseData[key.replace(/\s+/g, '_')],
+              // common mappings
+              baseData.studentUniqueCode,
+              baseData.learnerName,
+              baseData.courseName,
+              baseData.skillsAcquired,
+              baseData.issueDate,
+            ];
+
+            const found = candidates.find((v) => v !== undefined && v !== null && v !== '');
+            if (found !== undefined) {
+              payload[key] = found;
+            } else {
+              // fallback: use empty string
+              payload[key] = payload[key] || '';
+            }
+          });
+        }
+
+        const res = await fetch(`${API_BASE}/api/templates/${tid}/preview`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const errText = await res.text().catch(() => null);
+          console.error('Template preview failed:', res.status, errText);
+          return;
+        }
+
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (!cancelled) setPdfPreviewUrl(objectUrl);
+      } catch (e) {
+        console.error('Failed fetching template preview:', e);
+      }
+    }
+
+    // debounce 450ms to avoid spamming preview endpoint while typing
+    timer = setTimeout(() => {
+      fetchPreview();
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (timer) clearTimeout(timer);
+    };
+  }, [singleCertForm.templateId, token, certFile, singleCertForm.learnerEmail, singleCertForm.courseId, singleCertForm.courseName, singleCertForm.validUntil, singleCertForm.skillsAcquired, singleCertForm.learnerName, activeTemplate, courses]);
+
+  // Ensure activeTemplate is loaded if templateId is present but doc not yet fetched
+  useEffect(() => {
+    const tid = singleCertForm.templateId;
+    if (!tid) {
+      setActiveTemplate(null);
+      return;
+    }
+
+    if (activeTemplate && (activeTemplate._id === tid || activeTemplate.id === tid)) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await apiFetch(`/api/templates/${tid}`, { token });
+        if (cancelled) return;
+        if (resp.ok && resp.data) {
+          setActiveTemplate(resp.data.template || resp.data);
+        } else {
+          setActiveTemplate(null);
+        }
+      } catch (e) {
+        if (!cancelled) setActiveTemplate(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [singleCertForm.templateId, token, activeTemplate]);
+
   // Handle batch upload
   const handleBatchSubmit = async (e) => {
     e.preventDefault();
@@ -325,6 +600,13 @@ export default function IssuerDashboard() {
     try {
       const formData = new FormData();
       formData.append("file", batchFile);
+      let tidToUse = batchTemplateId;
+      if (tidToUse === '__SAMPLE__') {
+        // ensure sample saved
+        const saved = await saveActiveTemplate();
+        if (saved && saved._id) tidToUse = saved._id;
+      }
+      if (tidToUse) formData.append('templateId', tidToUse);
 
       const response = await apiFetch("/api/institute/certificates/batch", {
         method: "POST",
@@ -656,7 +938,8 @@ export default function IssuerDashboard() {
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      window.URL.revokeObjectURL(url);
+      // revoke URL after short delay to ensure download has started
+      setTimeout(() => { try { window.URL.revokeObjectURL(url); } catch(e){} }, 2000);
     } catch (primaryError) {
       if (legacyPath) {
         try {
@@ -677,7 +960,8 @@ export default function IssuerDashboard() {
           document.body.appendChild(anchor);
           anchor.click();
           anchor.remove();
-          window.URL.revokeObjectURL(url);
+          // revoke URL after short delay to ensure download has started
+          setTimeout(() => { try { window.URL.revokeObjectURL(url); } catch(e){} }, 2000);
           return;
         } catch (fallbackError) {
           console.error("Artifact fallback failed:", fallbackError);
@@ -728,6 +1012,35 @@ export default function IssuerDashboard() {
     );
   };
 
+  // Branding handlers
+  const handleLogoFileChange = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setBranding((b) => ({ ...b, logoDataUrl: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveBranding = () => {
+    try {
+      localStorage.setItem(BRANDING_KEY, JSON.stringify(branding));
+      setFeedback({ type: "success", message: "Branding saved" });
+    } catch (e) {
+      setFeedback({ type: "error", message: "Failed to save branding" });
+    }
+  };
+
+  const resetBranding = () => {
+    try {
+      localStorage.removeItem(BRANDING_KEY);
+      setBranding(defaultBranding);
+      setFeedback({ type: "success", message: "Branding reset to default" });
+    } catch (e) {
+      setFeedback({ type: "error", message: "Failed to reset branding" });
+    }
+  };
+
   if (!token || !user) {
     return null;
   }
@@ -735,20 +1048,46 @@ export default function IssuerDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black">
       <div className="container mx-auto px-4 py-6">
+        {branding.customCss && (
+          <style>{`.issuer-header-custom { ${branding.customCss} }`}</style>
+        )}
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 issuer-header-custom">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-4 rounded-xl">
-                <i className="bx bx-buildings text-white text-3xl"></i>
-              </div>
+                <div
+                  className="p-2 rounded-xl flex items-center justify-center"
+                  style={{
+                    background:
+                      branding.background || "linear-gradient(90deg,#3b82f6,#8b5cf6)",
+                  }}
+                >
+                  {branding.showLogo && (branding.logoDataUrl || branding.logoUrl) ? (
+                    <img
+                      src={branding.logoDataUrl || branding.logoUrl}
+                      alt="logo"
+                      style={{ width: 56, height: 56, objectFit: "contain" }}
+                      className="rounded"
+                    />
+                  ) : (
+                    <div className="bg-transparent p-4 rounded-xl">
+                      <i className="bx bx-buildings text-white text-3xl"></i>
+                    </div>
+                  )}
+                </div>
               <div>
-                <h1 className="text-4xl font-bold text-white">
-                  Issuer Dashboard
-                </h1>
-                <p className="text-gray-300 mt-1">
-                  Welcome back, {user?.name || "Institute"}
-                </p>
+                  <h1
+                    className="text-4xl font-bold"
+                    style={{ color: branding.primaryColor || "#fff" }}
+                  >
+                    {branding.headerText || "Issuer Dashboard"}
+                  </h1>
+                  <p
+                    className="mt-1"
+                    style={{ color: branding.accentColor || "#cbd5e1" }}
+                  >
+                    {branding.subText || `Welcome back, ${user?.name || "Institute"}`}
+                  </p>
               </div>
             </div>
             <button
@@ -862,6 +1201,7 @@ export default function IssuerDashboard() {
                 label: "Issue Certificate",
                 icon: "bx-certificate",
               },
+              { id: "customize", label: "Templates", icon: "bx-palette" },
               { id: "batch", label: "Batch Upload", icon: "bx-upload" },
               { id: "certificates", label: "Certificates", icon: "bx-list-ul" },
               {
@@ -974,11 +1314,110 @@ export default function IssuerDashboard() {
           {/* Issue Certificate Tab */}
           {activeTab === "issue" && (
             <div>
-              <h2 className="text-2xl font-bold text-white mb-6">
-                Issue Single Certificate
-              </h2>
-              <form onSubmit={handleSingleCertSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Issue Single Certificate</h2>
+
+                  <div className="grid md:grid-cols-3 gap-6">
+                    {/* Preview column */}
+                    <div className="col-span-1">
+                      <h3 className="text-lg font-semibold text-white mb-3">Preview</h3>
+                      <div className="bg-gray-800/80 border border-gray-700 rounded-lg p-3 h-full">
+                        {pdfPreviewUrl ? (
+                          <iframe
+                            src={pdfPreviewUrl}
+                            title="PDF Preview"
+                            style={{ width: "100%", height: "60vh", border: "none" }}
+                          />
+                        ) : (
+                          <div className="bg-white rounded shadow p-6" style={{ minHeight: 420 }}>
+                            <div style={{ borderBottom: "1px solid #e5e7eb" }} className="pb-4 mb-4">
+                              <div style={{ fontSize: 18, fontWeight: 700 }}>{branding.headerText}</div>
+                              <div style={{ color: '#6b7280' }}>{branding.subText}</div>
+                            </div>
+
+                            <div className="text-center my-6">
+                              <div style={{ fontSize: 22, fontWeight: 700 }}>{singleCertForm.courseName || (courses.find(c=>c._id===singleCertForm.courseId)?.title) || 'Course Title'}</div>
+                              <div style={{ marginTop: 8 }}>{singleCertForm.skillsAcquired ? singleCertForm.skillsAcquired.split(',').slice(0,5).join(', ') : 'Skills / Modules'}</div>
+                            </div>
+
+                            <div style={{ position: 'absolute', bottom: 24 }} className="w-full">
+                              <div className="flex justify-between text-sm text-gray-600">
+                                <div>
+                                  <div className="font-semibold">Learner</div>
+                                  <div>{singleCertForm.learnerEmail || 'learner@example.com'}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-semibold">Valid Until</div>
+                                  <div>{singleCertForm.validUntil || '—'}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Form column */}
+                    <div className="col-span-2">
+                      <form onSubmit={handleSingleCertSubmit} className="space-y-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-gray-300 mb-2">Template</label>
+                          <select
+                            value={singleCertForm.templateId}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setSingleCertForm({ ...singleCertForm, templateId: val });
+                                // load template doc for live mapping
+                                if (!val) {
+                                  setActiveTemplate(null);
+                                  return;
+                                }
+
+                                // If user selected the local sample template, use it directly
+                                if (val === '__SAMPLE__') {
+                                  setActiveTemplate(sampleTemplate);
+                                  return;
+                                }
+
+                                (async () => {
+                                  try {
+                                    const resp = await apiFetch(`/api/templates/${val}`, { token });
+                                    if (resp.ok && resp.data) setActiveTemplate(resp.data.template || resp.data);
+                                    else setActiveTemplate(null);
+                                  } catch (err) {
+                                    console.error('Failed to load template doc:', err);
+                                    setActiveTemplate(null);
+                                  }
+                                })();
+                              }}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                          >
+                            <option value="">Default (no template)</option>
+                            <option value="__SAMPLE__">Sample Template (local)</option>
+                            {templates.map((t) => (
+                              <option key={t._id} value={t._id}>
+                                {t.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                  <div>
+                    <label className="block text-gray-300 mb-2">
+                      Learner Name
+                    </label>
+                    <input
+                      type="text"
+                      value={singleCertForm.learnerName}
+                      onChange={(e) =>
+                        setSingleCertForm({
+                          ...singleCertForm,
+                          learnerName: e.target.value,
+                        })
+                      }
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-gray-300 mb-2">
                       Learner Email *
@@ -1014,108 +1453,7 @@ export default function IssuerDashboard() {
                     />
                   </div>
 
-                  {/* Personal Details */}
-                  <div>
-                    <label className="block text-gray-300 mb-2">Father's Name</label>
-                    <input
-                      type="text"
-                      value={singleCertForm.fatherName}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, fatherName: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-300 mb-2">Mother's Name</label>
-                    <input
-                      type="text"
-                      value={singleCertForm.motherName}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, motherName: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-300 mb-2">Date of Birth</label>
-                    <input
-                      type="date"
-                      value={singleCertForm.dob}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, dob: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-300 mb-2">Address</label>
-                    <input
-                      type="text"
-                      value={singleCertForm.address}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, address: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-300 mb-2">District</label>
-                    <input
-                      type="text"
-                      value={singleCertForm.district}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, district: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-300 mb-2">State</label>
-                    <input
-                      type="text"
-                      value={singleCertForm.state}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, state: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
-
-                  {/* Course Details */}
-                  <div>
-                    <label className="block text-gray-300 mb-2">Trade</label>
-                    <input
-                      type="text"
-                      value={singleCertForm.trade}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, trade: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-300 mb-2">Duration</label>
-                    <input
-                      type="text"
-                      value={singleCertForm.duration}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, duration: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-300 mb-2">Session</label>
-                    <input
-                      type="text"
-                      value={singleCertForm.session}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, session: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-300 mb-2">Test Month</label>
-                    <input
-                      type="text"
-                      value={singleCertForm.testMonth}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, testMonth: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-300 mb-2">Test Year</label>
-                    <input
-                      type="text"
-                      value={singleCertForm.testYear}
-                      onChange={(e) => setSingleCertForm({ ...singleCertForm, testYear: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    />
-                  </div>
+                  {/* (Simplified form) removed extended personal/course fields */}
 
                   <div>
                     <label className="block text-gray-300 mb-2">
@@ -1165,35 +1503,14 @@ export default function IssuerDashboard() {
                       type="date"
                       value={singleCertForm.validUntil}
                       onChange={(e) =>
-                        setSingleCertForm({
-                          ...singleCertForm,
-                          validUntil: e.target.value,
-                        })
+                        setSingleCertForm({ ...singleCertForm, validUntil: e.target.value })
                       }
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
                     />
                   </div>
+                    </div>
 
-                  <div>
-                    <label className="block text-gray-300 mb-2">
-                      NSQF Level
-                    </label>
-                    <input
-                      type="text"
-                      value={singleCertForm.nsqfLevel}
-                      onChange={(e) =>
-                        setSingleCertForm({
-                          ...singleCertForm,
-                          nsqfLevel: e.target.value,
-                        })
-                      }
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                      placeholder="e.g., Level 4"
-                    />
-                  </div>
-                </div>
-
-                <div>
+                    <div>
                   <label className="block text-gray-300 mb-2">
                     Skills Acquired (comma-separated)
                   </label>
@@ -1211,23 +1528,21 @@ export default function IssuerDashboard() {
                   ></textarea>
                 </div>
 
-                <div>
-                  <label className="block text-gray-300 mb-2">
-                    Certificate PDF (optional)
-                  </label>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) => setCertFile(e.target.files[0])}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-                  />
-                </div>
+                    <div>
+                      <label className="block text-gray-300 mb-2">Certificate PDF (optional)</label>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => setCertFile(e.target.files[0])}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                      />
+                    </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-600 text-white py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-3"
-                >
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-600 text-white py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-3"
+                    >
                   {isSubmitting ? (
                     <>
                       <i className="bx bx-loader-alt animate-spin"></i>
@@ -1240,7 +1555,35 @@ export default function IssuerDashboard() {
                     </>
                   )}
                 </button>
-              </form>
+                          <button
+                            type="button"
+                            onClick={issueUsingActiveTemplate}
+                            disabled={isSubmitting}
+                            className="w-full mt-3 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-3"
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <i className="bx bx-loader-alt animate-spin"></i>
+                                Working...
+                              </>
+                            ) : (
+                              <>
+                                <i className="bx bx-save"></i>
+                                Save Template & Issue
+                              </>
+                            )}
+                          </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Template Editor Tab */}
+          {activeTab === "customize" && (
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-6">Certificate Template Editor</h2>
+              <CertificateTemplateEditor token={token} />
             </div>
           )}
 
@@ -1289,6 +1632,20 @@ export default function IssuerDashboard() {
               </div>
 
               <form onSubmit={handleBatchSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-gray-300 mb-2">Use Template (optional)</label>
+                  <select
+                    value={batchTemplateId}
+                    onChange={(e) => setBatchTemplateId(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white mb-4"
+                  >
+                    <option value="">(none)</option>
+                    <option value="__SAMPLE__">Sample Template (local)</option>
+                    {templates.map((t) => (
+                      <option key={t._id} value={t._id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div>
                   <label className="block text-gray-300 mb-2">
                     Upload CSV or JSON File *

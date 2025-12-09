@@ -6,6 +6,7 @@ const BlockchainService = require("./blockchainService");
 const blockchainService = new BlockchainService();
 const storageService = require("./storageService");
 const { generateCertificatePDF } = require("./pdfGenerator");
+const htmlPdfService = require("./htmlPdfService");
 const {
   canonicalizeCertificate,
   canonicalStringify,
@@ -729,8 +730,29 @@ class CertificateService {
       issue_date: certificateData.issueDate ? new Date(certificateData.issueDate).toLocaleDateString() : new Date().toLocaleDateString(),
     };
 
-    // Use the new PDF generator
-    const { pdfBuffer } = await generateCertificatePDF(pdfData);
+    // If a templateId is provided, prefer rendering via the HTML template renderer
+    let pdfBuffer;
+    if (certificateData.templateId) {
+      try {
+        const Template = require("../models/Template");
+        const templateDoc = await Template.findById(certificateData.templateId).lean();
+        if (templateDoc) {
+          const result = await htmlPdfService.generatePdfFromTemplate(
+            templateDoc,
+            certificateData
+          );
+          pdfBuffer = result && result.pdfBuffer ? result.pdfBuffer : null;
+        }
+      } catch (e) {
+        console.warn("Template PDF rendering failed, falling back to legacy generator:", e && e.message);
+      }
+    }
+
+    // Fallback to existing PDF generator if template rendering not used/failed
+    if (!pdfBuffer) {
+      const generated = await generateCertificatePDF(pdfData);
+      pdfBuffer = generated && generated.pdfBuffer ? generated.pdfBuffer : generated;
+    }
 
     const pdfHash = crypto.createHash("sha256").update(pdfBuffer).digest("hex");
 

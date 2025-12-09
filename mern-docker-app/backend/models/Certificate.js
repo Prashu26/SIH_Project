@@ -63,9 +63,8 @@ const CertificateSchema = new mongoose.Schema(
     
     // Hashes & verification
     pdfHash: { type: String, index: true }, // SHA-256 hash of the PDF file
-    metadataHash: { type: String, index: true }, // SHA-256 hash of the metadata (legacy)
-    metadataHash: { type: String, required: true, index: true },
-    artifactHash: { type: String },
+    metadataHash: { type: String, index: true }, // SHA-256 hash of the metadata (optional)
+    artifactHash: { type: String, index: true },
     sha256: { type: String, index: true }, // Legacy field
     qrCodeData: { type: String },
     

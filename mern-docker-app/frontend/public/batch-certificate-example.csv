@@ -1,0 +1,4 @@
+name,email,course,grade,completionDate
+John Doe,john.doe@example.com,Full Stack Web Development,A+,2025-01-15
+Jane Smith,jane.smith@example.com,Data Science Fundamentals,A,2025-01-15
+Bob Johnson,bob.johnson@example.com,Machine Learning Basics,B+,2025-01-15

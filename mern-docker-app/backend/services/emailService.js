@@ -1,6 +1,13 @@
 const nodemailer = require("nodemailer");
 const storageService = require("./storageService");
 
+// Debug: Log SMTP configuration
+console.log("🔧 SMTP Configuration:");
+console.log("  SMTP_HOST:", process.env.SMTP_HOST);
+console.log("  SMTP_PORT:", process.env.SMTP_PORT);
+console.log("  SMTP_USER:", process.env.SMTP_USER);
+console.log("  SMTP_PASSWORD:", process.env.SMTP_PASSWORD ? "***" + process.env.SMTP_PASSWORD.slice(-4) : "NOT SET");
+
 const transporter = nodemailer.createTransport({
   service: process.env.SMTP_SERVICE || 'gmail',
   host: process.env.SMTP_HOST,
@@ -40,13 +47,19 @@ async function sendCertificateEmail({
   html,
   pdfFileId,
   pdfFilename,
+  pdfBuffer,
 }) {
   if (!to) throw new Error("Recipient email required");
 
   let attachments = [];
 
   try {
-    if (pdfFileId) {
+    if (pdfBuffer) {
+      attachments.push({
+        filename: pdfFilename || "certificate.pdf",
+        content: pdfBuffer,
+      });
+    } else if (pdfFileId) {
       const fileObj = await storageService.getFileStream(pdfFileId);
       if (fileObj && fileObj.stream) {
         attachments.push({
