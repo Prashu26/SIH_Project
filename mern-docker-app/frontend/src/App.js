@@ -9,7 +9,7 @@ import Register from './pages/Register';
 import Verify from './pages/Verify';
 import StudentDashboard from './pages/StudentDashboard';
 import Documents from './pages/Documents';
-import IssuerDashboard from './pages/IssuerDashboard';
+import Dashboard from './pages/IssuerDashboard';
 import NotFound from './pages/NotFound';
 import AdminDashboard from './pages/AdminDashboard';
 import About from './pages/About';
@@ -95,7 +95,7 @@ function Layout() {
             path="/institution/*" 
             element={
               <RequireAuth allowedRoles={['institution', 'institute']}>
-                <IssuerDashboard />
+                <Dashboard />
               </RequireAuth>
             } 
           />
@@ -103,7 +103,7 @@ function Layout() {
             path="/institute/*" 
             element={
               <RequireAuth allowedRoles={['institution', 'institute']}>
-                <IssuerDashboard />
+                <Dashboard />
               </RequireAuth>
             } 
           />
