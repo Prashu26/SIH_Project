@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API_BASE from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const MessagingInterface = ({ conversationId, onClose }) => {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [conversation, setConversation] = useState(null);
@@ -82,7 +84,7 @@ const MessagingInterface = ({ conversationId, onClose }) => {
         setNewMessage('');
       }
     } catch (error) {
-      alert('Error sending message');
+      console.error('Error sending message:', error);
     } finally {
       setSending(false);
     }
@@ -102,7 +104,7 @@ const MessagingInterface = ({ conversationId, onClose }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-lg">Loading conversation...</div>
+        <div className="text-lg">{t('loadingConversation')}</div>
       </div>
     );
   }
@@ -113,7 +115,7 @@ const MessagingInterface = ({ conversationId, onClose }) => {
       <div className="flex justify-between items-center p-4 border-b bg-gray-50">
         <div>
           <h3 className="text-lg font-semibold">
-            {conversation?.participantName || 'Conversation'}
+            {conversation?.participantName || t('conversation')}
           </h3>
           <p className="text-sm text-gray-600">
             {conversation?.participantEmail}
@@ -160,7 +162,7 @@ const MessagingInterface = ({ conversationId, onClose }) => {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
+            placeholder={t('typeMessage')}
             className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
             rows={2}
           />
@@ -183,6 +185,7 @@ const MessagingInterface = ({ conversationId, onClose }) => {
 
 // Main Messages Component
 const Messages = () => {
+  const { t } = useLanguage();
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -212,7 +215,7 @@ const Messages = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading conversations...</div>
+        <div className="text-lg">{t('loadingConversations')}</div>
       </div>
     );
   }
@@ -222,7 +225,7 @@ const Messages = () => {
       {/* Conversations List */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="p-4 border-b bg-gray-50">
-          <h3 className="text-lg font-semibold">Conversations</h3>
+          <h3 className="text-lg font-semibold">{t('conversations')}</h3>
         </div>
         <div className="divide-y max-h-[600px] overflow-y-auto">
           {conversations.map((conversation) => (
@@ -255,7 +258,7 @@ const Messages = () => {
           ))}
           {conversations.length === 0 && (
             <div className="p-8 text-center text-gray-500">
-              No conversations yet
+              {t('noConversations')}
             </div>
           )}
         </div>
@@ -272,7 +275,7 @@ const Messages = () => {
           <div className="bg-white rounded-lg shadow h-full flex items-center justify-center">
             <div className="text-center text-gray-500">
               <i className="bx bx-message-square-dots text-4xl mb-4"></i>
-              <p>Select a conversation to start messaging</p>
+              <p>{t('selectConversation')}</p>
             </div>
           </div>
         )}

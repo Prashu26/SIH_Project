@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const OrganizationLogin = () => {
+  const { t } = useLanguage();
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
@@ -44,7 +46,7 @@ const OrganizationLogin = () => {
         // Navigate to organization dashboard
         navigate('/organization/dashboard');
       } else {
-        setError(data.message || 'Login failed');
+        setError(data.message || t('loginFailed'));
       }
     } catch (err) {
       setError('Network error. Please try again.');
@@ -58,10 +60,10 @@ const OrganizationLogin = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Organization Login
+            {t('organizationLogin')}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Access your organization dashboard
+            {t('accessOrganizationDashboard')}
           </p>
         </div>
 
@@ -69,7 +71,7 @@ const OrganizationLogin = () => {
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email" className="sr-only">
-                Email address
+                {t('emailAddress')}
               </label>
               <input
                 id="email"
@@ -80,12 +82,12 @@ const OrganizationLogin = () => {
                 value={credentials.email}
                 onChange={handleInputChange}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Organization email"
+                placeholder={t('organizationEmail')}
               />
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
-                Password
+                {t('password')}
               </label>
               <input
                 id="password"
@@ -96,7 +98,7 @@ const OrganizationLogin = () => {
                 value={credentials.password}
                 onChange={handleInputChange}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                placeholder={t('password')}
               />
             </div>
           </div>
@@ -113,19 +115,19 @@ const OrganizationLogin = () => {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? t('signingIn') : t('signIn')}
             </button>
           </div>
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Don't have an organization account?{' '}
+              {t('dontHaveOrganizationAccount')}{' '}
               <button
                 type="button"
                 onClick={() => navigate('/organization/register')}
                 className="font-medium text-indigo-600 hover:text-indigo-500"
               >
-                Register here
+                {t('registerHere')}
               </button>
             </p>
           </div>

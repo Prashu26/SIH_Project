@@ -2,10 +2,12 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../services/api';
 import 'boxicons/css/boxicons.min.css';
+import { useLanguage } from '../contexts/LanguageContext';
 
 import AuthContext from '../contexts/AuthContext';
 
 export default function Login() {
+  const { t } = useLanguage();
   const [form, setForm] = useState({ email: '', password: '' });
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,15 +144,15 @@ export default function Login() {
         <div className="form-container institution-container">
           <form className="form-custom" onSubmit={submit}>
             <div className="icon">🏛️</div>
-            <h1 className="font-bold text-3xl mb-2">Institution Login</h1>
-            <div className="user-type">Educational Institution</div>
+            <h1 className="font-bold text-3xl mb-2">{t('instituteLogin')}</h1>
+            <div className="user-type">{t('instituteLogin')}</div>
             
             {message && <div className="text-red-500 text-sm mb-4">{message}</div>}
             
             <input 
               type="email" 
               name="email"
-              placeholder="Admin Email" 
+              placeholder={t('emailPlaceholder')}
               className="input-custom"
               value={form.email}
               onChange={handleInputChange}
@@ -159,16 +161,16 @@ export default function Login() {
             <input 
               type="password" 
               name="password"
-              placeholder="Password" 
+              placeholder={t('passwordPlaceholder')}
               className="input-custom"
               value={form.password}
               onChange={handleInputChange}
               required
             />
             
-            <a href="#" className="text-sm no-underline my-4">Forgot your password?</a>
+            <a href="#" className="text-sm no-underline my-4">{t('forgotPassword')}</a>
             <button className="btn-custom" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing In...' : 'Sign In'}
+              {isSubmitting ? t('signingIn') : t('signIn')}
             </button>
           </form>
         </div>
@@ -177,15 +179,15 @@ export default function Login() {
         <div className="form-container student-container">
           <form className="form-custom" onSubmit={submit}>
             <div className="icon">🎓</div>
-            <h1 className="font-bold text-3xl mb-2">Student Login</h1>
-            <div className="user-type">Student Portal</div>
+            <h1 className="font-bold text-3xl mb-2">{t('learnerLogin')}</h1>
+            <div className="user-type">{t('learnerLogin')}</div>
             
             {message && <div className="text-red-500 text-sm mb-4">{message}</div>}
             
             <input 
               type="email" 
               name="email"
-              placeholder="Email" 
+              placeholder={t('emailPlaceholder')}
               className="input-custom"
               value={form.email}
               onChange={handleInputChange}
@@ -194,19 +196,19 @@ export default function Login() {
             <input 
               type="password" 
               name="password"
-              placeholder="Password" 
+              placeholder={t('passwordPlaceholder')}
               className="input-custom"
               value={form.password}
               onChange={handleInputChange}
               required
             />
             
-            <a href="#" className="text-sm no-underline my-4">Forgot your password?</a>
+            <a href="#" className="text-sm no-underline my-4">{t('forgotPassword')}</a>
             <button className="btn-custom" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing In...' : 'Sign In'}
+              {isSubmitting ? t('signingIn') : t('signIn')}
             </button>
             <span className="text-[#b3b3b3] text-sm mt-4">
-              Don't have an account? <a href="/register" className="text-[#1DB954] font-bold no-underline hover:text-[#1ed760]">Register here</a>
+              {t('dontHaveAccount')} <a href="/register" className="text-[#1DB954] font-bold no-underline hover:text-[#1ed760]">{t('signUp')}</a>
             </span>
           </form>
         </div>
@@ -216,15 +218,15 @@ export default function Login() {
           <div className="overlay">
             <div className="overlay-panel overlay-left">
               <div className="icon" style={{color: 'white'}}>🎓</div>
-              <h1 className="text-white text-3xl font-bold mb-4">Welcome Back!</h1>
-              <p className="text-white text-sm font-medium leading-relaxed mb-8">To keep connected with us please login with your personal info</p>
-              <button className="btn-custom btn-ghost" onClick={() => setIsRightPanelActive(false)}>Student Login</button>
+              <h1 className="text-white text-3xl font-bold mb-4">{t('welcomeBack')}</h1>
+              <p className="text-white text-sm font-medium leading-relaxed mb-8">{t('loginToContinue')}</p>
+              <button className="btn-custom btn-ghost" onClick={() => setIsRightPanelActive(false)}>{t('learnerLogin')}</button>
             </div>
             <div className="overlay-panel overlay-right">
               <div className="icon" style={{color: 'white'}}>🏛️</div>
-              <h1 className="text-white text-3xl font-bold mb-4">Institution Access</h1>
-              <p className="text-white text-sm font-medium leading-relaxed mb-8">Enter your personal details and start journey with us</p>
-              <button className="btn-custom btn-ghost" onClick={() => setIsRightPanelActive(true)}>Institution Login</button>
+              <h1 className="text-white text-3xl font-bold mb-4">{t('instituteLogin')}</h1>
+              <p className="text-white text-sm font-medium leading-relaxed mb-8">{t('loginToContinue')}</p>
+              <button className="btn-custom btn-ghost" onClick={() => setIsRightPanelActive(true)}>{t('instituteLogin')}</button>
             </div>
           </div>
         </div>

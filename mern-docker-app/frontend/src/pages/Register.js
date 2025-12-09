@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../services/api';
 import 'boxicons/css/boxicons.min.css';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const learnerDefaults = {
   firstName: '',
@@ -19,6 +20,7 @@ const institutionDefaults = {
 };
 
 export default function Register() {
+  const { t } = useLanguage();
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
   const [role, setRole] = useState('learner');
   const [form, setForm] = useState(learnerDefaults);
@@ -44,7 +46,7 @@ export default function Register() {
       if (role === 'learner') {
         const name = `${form.firstName} ${form.lastName}`.trim();
         if (!name) {
-          setFeedback({ tone: 'error', text: 'First and last name are required.' });
+          setFeedback({ tone: 'error', text: t('firstNameRequired') });
           setIsSubmitting(false);
           return;
         }
@@ -67,15 +69,15 @@ export default function Register() {
       setIsSubmitting(false);
 
       if (!ok) {
-        setFeedback({ tone: 'error', text: data.message || 'Registration failed' });
+        setFeedback({ tone: 'error', text: data.message || t('registrationFailed') });
         return;
       }
 
-      setFeedback({ tone: 'success', text: 'Registration successful. Redirecting to login…' });
+      setFeedback({ tone: 'success', text: t('registrationSuccessful') });
       setTimeout(() => navigate('/login'), 1400);
     } catch (error) {
       setIsSubmitting(false);
-      setFeedback({ tone: 'error', text: 'Network error. Please try again.' });
+      setFeedback({ tone: 'error', text: t('networkError') });
       console.error('Registration error:', error);
     }
   };
@@ -169,17 +171,17 @@ export default function Register() {
         <div className="form-container institution-container">
           <form className="form-custom" onSubmit={submit}>
             <div className="icon">🏛️</div>
-            <h1 className="font-bold text-3xl mb-2">Institution Signup</h1>
-            <div className="user-type">Educational Institution</div>
+            <h1 className="font-bold text-3xl mb-2">{t('registerAsInstitute')}</h1>
+            <div className="user-type">{t('registerAsInstitute')}</div>
 
             {feedback.text && <div className={`text-sm mb-4 ${feedback.tone === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>{feedback.text}</div>}
 
-            <input type="text" name="name" placeholder="Institution Name" className="input-custom" value={form.name || ''} onChange={onChange('name')} required />
-            <input type="email" name="email" placeholder="Admin Email" className="input-custom" value={form.email || ''} onChange={onChange('email')} required />
-            <input type="password" name="password" placeholder="Password" className="input-custom" value={form.password || ''} onChange={onChange('password')} required />
-            <input type="text" name="registrationId" placeholder="Registration ID (optional)" className="input-custom" value={form.registrationId || ''} onChange={onChange('registrationId')} />
+            <input type="text" name="name" placeholder={t('instituteName')} className="input-custom" value={form.name || ''} onChange={onChange('name')} required />
+            <input type="email" name="email" placeholder={t('emailPlaceholder')} className="input-custom" value={form.email || ''} onChange={onChange('email')} required />
+            <input type="password" name="password" placeholder={t('passwordPlaceholder')} className="input-custom" value={form.password || ''} onChange={onChange('password')} required />
+            <input type="text" name="registrationId" placeholder={t('registrationId')} className="input-custom" value={form.registrationId || ''} onChange={onChange('registrationId')} />
 
-            <button className="btn-custom" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create Account'}</button>
+            <button className="btn-custom" disabled={isSubmitting}>{isSubmitting ? t('signingIn') : t('createAccount')}</button>
           </form>
         </div>
 
@@ -187,22 +189,22 @@ export default function Register() {
         <div className="form-container student-container">
           <form className="form-custom" onSubmit={submit}>
             <div className="icon">🎓</div>
-            <h1 className="font-bold text-3xl mb-2">Student Signup</h1>
-            <div className="user-type">Student Portal</div>
+            <h1 className="font-bold text-3xl mb-2">{t('registerAsLearner')}</h1>
+            <div className="user-type">{t('registerAsLearner')}</div>
 
             {feedback.text && <div className={`text-sm mb-4 ${feedback.tone === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>{feedback.text}</div>}
 
             <div style={{width: '100%'}} className="grid grid-cols-2 gap-4">
-              <input placeholder="First Name" className="input-custom" value={form.firstName || ''} onChange={onChange('firstName')} required />
-              <input placeholder="Last Name" className="input-custom" value={form.lastName || ''} onChange={onChange('lastName')} required />
+              <input placeholder={t('firstName')} className="input-custom" value={form.firstName || ''} onChange={onChange('firstName')} required />
+              <input placeholder={t('lastName')} className="input-custom" value={form.lastName || ''} onChange={onChange('lastName')} required />
             </div>
-            <input type="email" placeholder="Email" className="input-custom" value={form.email || ''} onChange={onChange('email')} required />
-            <input type="password" placeholder="Password" className="input-custom" value={form.password || ''} onChange={onChange('password')} required />
-            <input placeholder="Learner ID (e.g. LRN-2025-001)" className="input-custom" value={form.learnerId || ''} onChange={onChange('learnerId')} />
+            <input type="email" placeholder={t('emailPlaceholder')} className="input-custom" value={form.email || ''} onChange={onChange('email')} required />
+            <input type="password" placeholder={t('passwordPlaceholder')} className="input-custom" value={form.password || ''} onChange={onChange('password')} required />
+            <input placeholder={t('learnerId')} className="input-custom" value={form.learnerId || ''} onChange={onChange('learnerId')} />
 
-            <button className="btn-custom" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create Account'}</button>
+            <button className="btn-custom" disabled={isSubmitting}>{isSubmitting ? t('signingIn') : t('createAccount')}</button>
 
-            <span className="text-[#b3b3b3] text-sm mt-4">Already have an account? <a href="/login" className="text-[#1DB954] font-bold no-underline hover:text-[#1ed760]">Sign in here</a></span>
+            <span className="text-[#b3b3b3] text-sm mt-4">{t('alreadyHaveAccount')} <a href="/login" className="text-[#1DB954] font-bold no-underline hover:text-[#1ed760]">{t('signIn')}</a></span>
           </form>
         </div>
 
@@ -211,15 +213,15 @@ export default function Register() {
           <div className="overlay">
             <div className="overlay-panel overlay-left">
               <div className="icon" style={{color: 'white'}}>🎓</div>
-              <h1 className="text-white text-3xl font-bold mb-4">Student Signup</h1>
-              <p className="text-white text-sm font-medium leading-relaxed mb-8">Create your student account to access courses and credentials.</p>
-              <button className="btn-custom btn-ghost" onClick={() => handleToggleRole('learner')}>Student Signup</button>
+              <h1 className="text-white text-3xl font-bold mb-4">{t('registerAsLearner')}</h1>
+              <p className="text-white text-sm font-medium leading-relaxed mb-8">{t('registerDesc')}</p>
+              <button className="btn-custom btn-ghost" onClick={() => handleToggleRole('learner')}>{t('registerAsLearner')}</button>
             </div>
             <div className="overlay-panel overlay-right">
               <div className="icon" style={{color: 'white'}}>🏛️</div>
-              <h1 className="text-white text-3xl font-bold mb-4">Institution Registration</h1>
-              <p className="text-white text-sm font-medium leading-relaxed mb-8">Register your institution to issue and manage credentials.</p>
-              <button className="btn-custom btn-ghost" onClick={() => handleToggleRole('institute')}>Institution Signup</button>
+              <h1 className="text-white text-3xl font-bold mb-4">{t('registerAsInstitute')}</h1>
+              <p className="text-white text-sm font-medium leading-relaxed mb-8">{t('registerDesc')}</p>
+              <button className="btn-custom btn-ghost" onClick={() => handleToggleRole('institute')}>{t('registerAsInstitute')}</button>
             </div>
           </div>
         </div>

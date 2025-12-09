@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import API_BASE, { apiFetch } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import "boxicons/css/boxicons.min.css";
+import { useLanguage } from '../contexts/LanguageContext';
 
 const CHAIN_LABELS = {
   "0x1": "Ethereum Mainnet",
@@ -29,6 +30,7 @@ function useAuth() {
 export default function IssuerDashboard() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   // State management
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -86,11 +88,11 @@ export default function IssuerDashboard() {
   const [isAnchoring, setIsAnchoring] = useState(false);
 
   const displayChainName = chainId
-    ? `${CHAIN_LABELS[chainId] || "Unknown Network"} (${chainId})`
-    : "Not connected";
+    ? `${CHAIN_LABELS[chainId] || t('unknownNetwork')} (${chainId})`
+    : t('notConnected');
   const displayAccount = metamaskAccount
     ? `${metamaskAccount.slice(0, 6)}...${metamaskAccount.slice(-4)}`
-    : "Not connected";
+    : t('notConnected');
 
   // Load dashboard data
   const loadDashboard = useCallback(async () => {
@@ -263,10 +265,12 @@ export default function IssuerDashboard() {
 
       if (response.ok) {
         const newLearner = response.data?.newLearner;
-        let successMessage = "Certificate issued successfully!";
+        let successMessage = t('certificateIssuedSuccess');
 
         if (newLearner?.temporaryPassword) {
-          successMessage += ` Temporary account created for ${newLearner.email}. Temporary password: ${newLearner.temporaryPassword}`;
+          successMessage += ` ` + t('tempAccountCreated')
+            .replace('{email}', newLearner.email)
+            .replace('{password}', newLearner.temporaryPassword);
         }
 
         setFeedback({ type: "success", message: successMessage });
@@ -297,13 +301,13 @@ export default function IssuerDashboard() {
       } else {
         setFeedback({
           type: "error",
-          message: response.data?.message || "Failed to issue certificate",
+          message: response.data?.message || t('issueCertificateFailed'),
         });
       }
     } catch (error) {
       setFeedback({
         type: "error",
-        message: "Network error. Please try again.",
+        message: t('networkError'),
       });
     } finally {
       setIsSubmitting(false);
@@ -315,7 +319,7 @@ export default function IssuerDashboard() {
     e.preventDefault();
 
     if (!batchFile) {
-      setFeedback({ type: "error", message: "Please select a file" });
+      setFeedback({ type: "error", message: t('selectFile') });
       return;
     }
 
@@ -338,7 +342,7 @@ export default function IssuerDashboard() {
           ? response.data.newLearners
           : [];
 
-        let message = `Batch processed: ${issuedCount} certificates issued`;
+        let message = t('batchProcessed').replace('{count}', issuedCount);
         if (newLearners.length > 0) {
           const summary = newLearners
             .map(
@@ -346,7 +350,7 @@ export default function IssuerDashboard() {
                 `${learner.email} (temp password: ${learner.temporaryPassword})`
             )
             .join("; ");
-          message += `. New learner accounts: ${summary}`;
+          message += `. ` + t('newLearnerAccountsCreated').replace('{summary}', summary);
         }
 
         setFeedback({ type: "success", message });
@@ -357,7 +361,7 @@ export default function IssuerDashboard() {
         loadCertificates();
       } else {
         const errorDetail = response.data?.errors?.[0]?.reason;
-        const errorMessage = response.data?.message || "Batch upload failed";
+        const errorMessage = response.data?.message || t('batchUploadFailed');
         setFeedback({
           type: "error",
           message: errorDetail
@@ -368,7 +372,7 @@ export default function IssuerDashboard() {
     } catch (error) {
       setFeedback({
         type: "error",
-        message: "Network error. Please try again.",
+        message: t('networkError'),
       });
     } finally {
       setIsSubmitting(false);
@@ -379,7 +383,7 @@ export default function IssuerDashboard() {
     if (typeof window === "undefined" || !window.ethereum) {
       setAnchorStatus({
         type: "error",
-        message: "Wallet not detected. Install Rabby or MetaMask and try again.",
+        message: t('walletNotDetected'),
       });
       return;
     }
@@ -397,16 +401,16 @@ export default function IssuerDashboard() {
       setChainId(currentChainId);
       setAnchorStatus({
         type: "success",
-        message: "Wallet connected successfully.",
+        message: t('walletConnected'),
       });
     } catch (error) {
       console.error("Wallet connect error:", error);
       setAnchorStatus({
         type: "error",
-        message: error?.message || "Failed to connect Wallet.",
+        message: error?.message || t('walletConnectionFailed'),
       });
     }
-  }, []);
+  }, [t]);
 
   const handleAnchorSubmit = async (e) => {
     e.preventDefault();
@@ -415,7 +419,7 @@ export default function IssuerDashboard() {
     if (!trimmedHash) {
       setAnchorStatus({
         type: "error",
-        message: "Enter a certificate or Merkle hash to anchor.",
+        message: t('enterHashToAnchor'),
       });
       return;
     }
@@ -423,7 +427,7 @@ export default function IssuerDashboard() {
     if (typeof window === "undefined" || !window.ethereum) {
       setAnchorStatus({
         type: "error",
-        message: "Wallet not detected. Install Rabby or MetaMask and try again.",
+        message: t('walletNotDetected'),
       });
       return;
     }
@@ -441,7 +445,7 @@ export default function IssuerDashboard() {
       console.error("Wallet account request error:", error);
       setAnchorStatus({
         type: "error",
-        message: error?.message || "Wallet account access denied.",
+        message: error?.message || t('walletAccessDenied'),
       });
       return;
     }
@@ -449,7 +453,7 @@ export default function IssuerDashboard() {
     if (!account) {
       setAnchorStatus({
         type: "error",
-        message: "No Wallet account available. Please connect your Wallet.",
+        message: t('noWalletAccount'),
       });
       return;
     }
@@ -460,7 +464,7 @@ export default function IssuerDashboard() {
     if (!/^0x[0-9a-fA-F]+$/.test(normalizedHash)) {
       setAnchorStatus({
         type: "error",
-        message: "Hash must be hexadecimal (0-9, a-f).",
+        message: t('hashMustBeHex'),
       });
       return;
     }
@@ -474,7 +478,7 @@ export default function IssuerDashboard() {
     if (!/^0x[a-fA-F0-9]{40}$/.test(targetAddress)) {
       setAnchorStatus({
         type: "error",
-        message: "Target address must be a valid 0x-prefixed Ethereum address.",
+        message: t('invalidTargetAddress'),
       });
       return;
     }
@@ -504,14 +508,14 @@ export default function IssuerDashboard() {
 
       setAnchorStatus({
         type: "success",
-        message: `Transaction submitted successfully: ${txHash}`,
+        message: t('transactionSubmitted').replace('{txHash}', txHash),
       });
       setHashToAnchor("");
     } catch (error) {
       console.error("Anchor submission error:", error);
       setAnchorStatus({
         type: "error",
-        message: error?.message || "Failed to submit transaction.",
+        message: error?.message || t('transactionFailed'),
       });
     } finally {
       setIsAnchoring(false);
@@ -542,7 +546,7 @@ export default function IssuerDashboard() {
       if (response.ok) {
         setFeedback({
           type: "success",
-          message: "Course created successfully!",
+          message: t('courseCreatedSuccess'),
         });
         setCourseForm({
           title: "",
@@ -555,13 +559,13 @@ export default function IssuerDashboard() {
       } else {
         setFeedback({
           type: "error",
-          message: response.data?.message || "Failed to create course",
+          message: response.data?.message || t('courseCreationFailed'),
         });
       }
     } catch (error) {
       setFeedback({
         type: "error",
-        message: "Network error. Please try again.",
+        message: t('networkError'),
       });
     } finally {
       setIsSubmitting(false);
@@ -580,31 +584,31 @@ export default function IssuerDashboard() {
       if (response.ok) {
         setFeedback({
           type: "success",
-          message: `Proof ${status.toLowerCase()} successfully`,
+          message: t('proofStatusUpdated').replace('{status}', status.toLowerCase()),
         });
         loadProofs();
       } else {
         setFeedback({
           type: "error",
-          message: response.data?.message || "Failed to update proof",
+          message: response.data?.message || t('proofUpdateFailed'),
         });
       }
     } catch (error) {
       setFeedback({
         type: "error",
-        message: "Network error. Please try again.",
+        message: t('networkError'),
       });
     }
   };
 
   // Handle certificate revocation
   const revokeCertificate = async (certId) => {
-    if (!window.confirm("Are you sure you want to revoke this certificate?")) {
+    if (!window.confirm(t('confirmRevoke'))) {
       return;
     }
 
     try {
-      const reason = prompt("Enter revocation reason:");
+      const reason = prompt(t('enterRevocationReason'));
       if (!reason) return;
 
       const response = await apiFetch(
@@ -619,20 +623,20 @@ export default function IssuerDashboard() {
       if (response.ok) {
         setFeedback({
           type: "success",
-          message: "Certificate revoked successfully",
+          message: t('certificateRevokedSuccess'),
         });
         loadCertificates();
         loadDashboard();
       } else {
         setFeedback({
           type: "error",
-          message: response.data?.message || "Failed to revoke certificate",
+          message: response.data?.message || t('certificateRevokeFailed'),
         });
       }
     } catch (error) {
       setFeedback({
         type: "error",
-        message: "Network error. Please try again.",
+        message: t('networkError'),
       });
     }
   };
@@ -687,7 +691,7 @@ export default function IssuerDashboard() {
       console.error("Artifact download failed:", primaryError);
       setFeedback({
         type: "error",
-        message: "Unable to download artifact. Please try again later.",
+        message: t('downloadFailed'),
       });
     }
   };
@@ -744,10 +748,10 @@ export default function IssuerDashboard() {
               </div>
               <div>
                 <h1 className="text-4xl font-bold text-white">
-                  Issuer Dashboard
+                  {t('issuerDashboard')}
                 </h1>
                 <p className="text-gray-300 mt-1">
-                  Welcome back, {user?.name || "Institute"}
+                  {t('welcomeBack')}, {user?.name || "Institute"}
                 </p>
               </div>
             </div>
@@ -760,7 +764,7 @@ export default function IssuerDashboard() {
               className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
             >
               <i className="bx bx-log-out"></i>
-              Logout
+              {t('logout')}
             </button>
           </div>
 
@@ -804,7 +808,7 @@ export default function IssuerDashboard() {
                     <div className="text-3xl font-bold text-white">
                       {statistics.totalCertificates}
                     </div>
-                    <p className="text-gray-400">Total Certificates</p>
+                    <p className="text-gray-400">{t('totalCertificates')}</p>
                   </div>
                 </div>
               </div>
@@ -818,7 +822,7 @@ export default function IssuerDashboard() {
                     <div className="text-3xl font-bold text-white">
                       {statistics.issuedCertificates}
                     </div>
-                    <p className="text-gray-400">Issued</p>
+                    <p className="text-gray-400">{t('issued')}</p>
                   </div>
                 </div>
               </div>
@@ -832,7 +836,7 @@ export default function IssuerDashboard() {
                     <div className="text-3xl font-bold text-white">
                       {statistics.pendingProofs}
                     </div>
-                    <p className="text-gray-400">Pending Reviews</p>
+                    <p className="text-gray-400">{t('pendingReviews')}</p>
                   </div>
                 </div>
               </div>
@@ -846,7 +850,7 @@ export default function IssuerDashboard() {
                     <div className="text-3xl font-bold text-white">
                       {statistics.totalCourses}
                     </div>
-                    <p className="text-gray-400">Courses</p>
+                    <p className="text-gray-400">{t('courses')}</p>
                   </div>
                 </div>
               </div>
@@ -856,27 +860,27 @@ export default function IssuerDashboard() {
           {/* Navigation Tabs */}
           <div className="flex flex-wrap gap-2 border-b border-gray-700">
             {[
-              { id: "dashboard", label: "Dashboard", icon: "bx-home" },
+              { id: "dashboard", label: t('dashboard'), icon: "bx-home" },
               {
                 id: "issue",
-                label: "Issue Certificate",
+                label: t('issueCertificate'),
                 icon: "bx-certificate",
               },
-              { id: "batch", label: "Batch Upload", icon: "bx-upload" },
-              { id: "certificates", label: "Certificates", icon: "bx-list-ul" },
+              { id: "batch", label: t('batchUpload'), icon: "bx-upload" },
+              { id: "certificates", label: t('certificates'), icon: "bx-list-ul" },
               {
                 id: "proofs",
-                label: "Pending Proofs",
+                label: t('pendingProofs'),
                 icon: "bx-time-five",
                 badge: proofs.length,
               },
-              { id: "courses", label: "Courses", icon: "bx-book" },
+              { id: "courses", label: t('courses'), icon: "bx-book" },
               {
                 id: "blockchain",
-                label: "Blockchain Anchor",
+                label: t('blockchainAnchor'),
                 icon: "bx-link-alt",
               },
-              { id: "batches", label: "Batches", icon: "bx-layer" },
+              { id: "batches", label: t('batches'), icon: "bx-layer" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -905,12 +909,12 @@ export default function IssuerDashboard() {
           {activeTab === "dashboard" && (
             <div>
               <h2 className="text-2xl font-bold text-white mb-6">
-                Dashboard Overview
+                {t('dashboardOverview')}
               </h2>
               <div className="grid gap-6">
                 <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-6">
                   <h3 className="text-xl font-bold text-white mb-4">
-                    Quick Actions
+                    {t('quickActions')}
                   </h3>
                   <div className="grid md:grid-cols-3 gap-4">
                     <button
@@ -918,21 +922,21 @@ export default function IssuerDashboard() {
                       className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition-colors flex items-center gap-3"
                     >
                       <i className="bx bx-plus-circle text-2xl"></i>
-                      <span>Issue Certificate</span>
+                      <span>{t('issueCertificate')}</span>
                     </button>
                     <button
                       onClick={() => setActiveTab("batch")}
                       className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition-colors flex items-center gap-3"
                     >
                       <i className="bx bx-upload text-2xl"></i>
-                      <span>Batch Upload</span>
+                      <span>{t('batchUpload')}</span>
                     </button>
                     <button
                       onClick={() => setActiveTab("courses")}
                       className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg transition-colors flex items-center gap-3"
                     >
                       <i className="bx bx-book text-2xl"></i>
-                      <span>Manage Courses</span>
+                      <span>{t('manageCourses')}</span>
                     </button>
                   </div>
                 </div>
@@ -941,7 +945,7 @@ export default function IssuerDashboard() {
                   statistics.recentCertificates.length > 0 && (
                     <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-6">
                       <h3 className="text-xl font-bold text-white mb-4">
-                        Recent Certificates
+                        {t('recentCertificates')}
                       </h3>
                       <div className="space-y-3">
                         {statistics.recentCertificates
@@ -975,13 +979,13 @@ export default function IssuerDashboard() {
           {activeTab === "issue" && (
             <div>
               <h2 className="text-2xl font-bold text-white mb-6">
-                Issue Single Certificate
+                {t('issueSingleCertificate')}
               </h2>
               <form onSubmit={handleSingleCertSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-gray-300 mb-2">
-                      Learner Email *
+                      {t('learnerEmail')} *
                     </label>
                     <input
                       type="email"
@@ -999,7 +1003,7 @@ export default function IssuerDashboard() {
 
                   <div>
                     <label className="block text-gray-300 mb-2">
-                      Learner ID
+                      {t('learnerId')}
                     </label>
                     <input
                       type="text"
@@ -1016,7 +1020,7 @@ export default function IssuerDashboard() {
 
                   {/* Personal Details */}
                   <div>
-                    <label className="block text-gray-300 mb-2">Father's Name</label>
+                    <label className="block text-gray-300 mb-2">{t('fatherName')}</label>
                     <input
                       type="text"
                       value={singleCertForm.fatherName}
@@ -1025,7 +1029,7 @@ export default function IssuerDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-2">Mother's Name</label>
+                    <label className="block text-gray-300 mb-2">{t('motherName')}</label>
                     <input
                       type="text"
                       value={singleCertForm.motherName}
@@ -1034,7 +1038,7 @@ export default function IssuerDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-2">Date of Birth</label>
+                    <label className="block text-gray-300 mb-2">{t('dob')}</label>
                     <input
                       type="date"
                       value={singleCertForm.dob}
@@ -1043,7 +1047,7 @@ export default function IssuerDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-2">Address</label>
+                    <label className="block text-gray-300 mb-2">{t('address')}</label>
                     <input
                       type="text"
                       value={singleCertForm.address}
@@ -1052,7 +1056,7 @@ export default function IssuerDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-2">District</label>
+                    <label className="block text-gray-300 mb-2">{t('district')}</label>
                     <input
                       type="text"
                       value={singleCertForm.district}
@@ -1061,7 +1065,7 @@ export default function IssuerDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-2">State</label>
+                    <label className="block text-gray-300 mb-2">{t('state')}</label>
                     <input
                       type="text"
                       value={singleCertForm.state}
@@ -1072,7 +1076,7 @@ export default function IssuerDashboard() {
 
                   {/* Course Details */}
                   <div>
-                    <label className="block text-gray-300 mb-2">Trade</label>
+                    <label className="block text-gray-300 mb-2">{t('trade')}</label>
                     <input
                       type="text"
                       value={singleCertForm.trade}
@@ -1081,7 +1085,7 @@ export default function IssuerDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-2">Duration</label>
+                    <label className="block text-gray-300 mb-2">{t('duration')}</label>
                     <input
                       type="text"
                       value={singleCertForm.duration}
@@ -1090,7 +1094,7 @@ export default function IssuerDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-2">Session</label>
+                    <label className="block text-gray-300 mb-2">{t('session')}</label>
                     <input
                       type="text"
                       value={singleCertForm.session}
@@ -1099,7 +1103,7 @@ export default function IssuerDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-2">Test Month</label>
+                    <label className="block text-gray-300 mb-2">{t('testMonth')}</label>
                     <input
                       type="text"
                       value={singleCertForm.testMonth}
@@ -1108,7 +1112,7 @@ export default function IssuerDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 mb-2">Test Year</label>
+                    <label className="block text-gray-300 mb-2">{t('testYear')}</label>
                     <input
                       type="text"
                       value={singleCertForm.testYear}
@@ -1119,7 +1123,7 @@ export default function IssuerDashboard() {
 
                   <div>
                     <label className="block text-gray-300 mb-2">
-                      Select Course
+                      {t('selectCourse')}
                     </label>
                     <select
                       value={singleCertForm.courseId}
@@ -1131,7 +1135,7 @@ export default function IssuerDashboard() {
                       }
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
                     >
-                      <option value="">Select a course...</option>
+                      <option value="">{t('selectCoursePlaceholder')}</option>
                       {courses.map((course) => (
                         <option key={course._id} value={course._id}>
                           {course.title}
@@ -1142,7 +1146,7 @@ export default function IssuerDashboard() {
 
                   <div>
                     <label className="block text-gray-300 mb-2">
-                      Or Enter Course Name
+                      {t('orEnterCourseName')}
                     </label>
                     <input
                       type="text"
@@ -1159,7 +1163,7 @@ export default function IssuerDashboard() {
 
                   <div>
                     <label className="block text-gray-300 mb-2">
-                      Valid Until
+                      {t('validUntil')}
                     </label>
                     <input
                       type="date"
@@ -1176,7 +1180,7 @@ export default function IssuerDashboard() {
 
                   <div>
                     <label className="block text-gray-300 mb-2">
-                      NSQF Level
+                      {t('nsqfLevel')}
                     </label>
                     <input
                       type="text"
@@ -1195,7 +1199,7 @@ export default function IssuerDashboard() {
 
                 <div>
                   <label className="block text-gray-300 mb-2">
-                    Skills Acquired (comma-separated)
+                    {t('skillsAcquired')}
                   </label>
                   <textarea
                     value={singleCertForm.skillsAcquired}
@@ -1213,7 +1217,7 @@ export default function IssuerDashboard() {
 
                 <div>
                   <label className="block text-gray-300 mb-2">
-                    Certificate PDF (optional)
+                    {t('certificatePdfOptional')}
                   </label>
                   <input
                     type="file"
@@ -1231,12 +1235,12 @@ export default function IssuerDashboard() {
                   {isSubmitting ? (
                     <>
                       <i className="bx bx-loader-alt animate-spin"></i>
-                      Issuing...
+                      {t('issuing')}
                     </>
                   ) : (
                     <>
                       <i className="bx bx-certificate"></i>
-                      Issue Certificate
+                      {t('issueCertificate')}
                     </>
                   )}
                 </button>
@@ -1248,34 +1252,32 @@ export default function IssuerDashboard() {
           {activeTab === "batch" && (
             <div>
               <h2 className="text-2xl font-bold text-white mb-6">
-                Batch Certificate Upload
+                {t('batchCertificateUpload')}
               </h2>
 
               <div className="mb-6 bg-blue-600/20 border border-blue-500/30 rounded-lg p-4">
                 <h3 className="text-blue-300 font-semibold mb-2">
-                  CSV/JSON Format
+                  {t('csvJsonFormat')}
                 </h3>
-                <p className="text-blue-100 text-sm mb-2">Required columns:</p>
+                <p className="text-blue-100 text-sm mb-2">{t('requiredColumns')}</p>
                 <ul className="list-disc list-inside text-blue-100 text-sm space-y-1">
                   <li>
-                    <code>learnerEmail</code> - Email address of learner
+                    <code>learnerEmail</code> - {t('learnerEmailDesc')}
                   </li>
                   <li>
-                    <code>studentUniqueCode</code> - Unique student identifier
+                    <code>studentUniqueCode</code> - {t('studentUniqueCodeDesc')}
                   </li>
                   <li>
-                    <code>courseName</code> - Name of the course
+                    <code>courseName</code> - {t('courseNameDesc')}
                   </li>
                   <li>
-                    <code>courseCode</code> - Optional short code (e.g. C1001)
-                    if you prefer over the course name
+                    <code>courseCode</code> - {t('courseCodeDesc')}
                   </li>
                   <li>
-                    <code>skills</code> - Comma-separated skills (optional)
+                    <code>skills</code> - {t('skillsDesc')}
                   </li>
                   <li>
-                    <code>validUntil</code> - Expiry date in YYYY-MM-DD format
-                    (optional)
+                    <code>validUntil</code> - {t('validUntilDesc')}
                   </li>
                 </ul>
                 <a
@@ -1284,14 +1286,14 @@ export default function IssuerDashboard() {
                   download
                 >
                   <i className="bx bx-download"></i>
-                  Download sample CSV
+                  {t('downloadSampleCsv')}
                 </a>
               </div>
 
               <form onSubmit={handleBatchSubmit} className="space-y-6">
                 <div>
                   <label className="block text-gray-300 mb-2">
-                    Upload CSV or JSON File *
+                    {t('uploadCsvJson')}
                   </label>
                   <input
                     type="file"
@@ -1310,12 +1312,12 @@ export default function IssuerDashboard() {
                   {isSubmitting ? (
                     <>
                       <i className="bx bx-loader-alt animate-spin"></i>
-                      Processing...
+                      {t('processing')}
                     </>
                   ) : (
                     <>
                       <i className="bx bx-upload"></i>
-                      Process Batch
+                      {t('processBatch')}
                     </>
                   )}
                 </button>
@@ -1324,7 +1326,7 @@ export default function IssuerDashboard() {
               {batchResults && (
                 <div className="mt-6 bg-gray-700/50 border border-gray-600 rounded-lg p-4">
                   <h4 className="text-lg font-semibold text-white mb-2">
-                    Batch Results
+                    {t('batchResults')}
                   </h4>
                   <p className="text-gray-300 text-sm mb-3">
                     {batchResults.message ||
@@ -1335,7 +1337,7 @@ export default function IssuerDashboard() {
                     batchResults.newLearners.length > 0 && (
                       <div className="mb-4">
                         <h5 className="text-white font-medium">
-                          New Learner Accounts
+                          {t('newLearnerAccounts')}
                         </h5>
                         <ul className="text-gray-300 text-sm list-disc list-inside mt-2">
                           {batchResults.newLearners.map((nl) => (
@@ -1362,7 +1364,7 @@ export default function IssuerDashboard() {
                     batchResults.results.length > 0 && (
                       <div className="mb-4">
                         <h5 className="text-white font-medium">
-                          Certificates Issued
+                          {t('certificatesIssued')}
                         </h5>
                         <ul className="text-gray-300 text-sm list-disc list-inside mt-2">
                           {batchResults.results.map((r) => (
@@ -1383,7 +1385,7 @@ export default function IssuerDashboard() {
                   {Array.isArray(batchResults.errors) &&
                     batchResults.errors.length > 0 && (
                       <div>
-                        <h5 className="text-red-400 font-medium">Errors</h5>
+                        <h5 className="text-red-400 font-medium">{t('errors')}</h5>
                         <ul className="text-red-300 text-sm list-disc list-inside mt-2">
                           {batchResults.errors.map((e, idx) => (
                             <li key={idx}>
@@ -1403,7 +1405,7 @@ export default function IssuerDashboard() {
           {activeTab === "certificates" && (
             <div>
               <h2 className="text-2xl font-bold text-white mb-6">
-                Issued Certificates
+                {t('issuedCertificates')}
               </h2>
 
               {loading ? (
@@ -1413,7 +1415,7 @@ export default function IssuerDashboard() {
               ) : certificates.length === 0 ? (
                 <div className="text-center py-12">
                   <i className="bx bx-certificate text-6xl text-gray-600 mb-4"></i>
-                  <p className="text-gray-400">No certificates issued yet</p>
+                  <p className="text-gray-400">{t('noCertificatesIssued')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1432,18 +1434,18 @@ export default function IssuerDashboard() {
                               {cert.course?.title || "N/A"}
                             </h3>
                             <p className="text-gray-300">
-                              <span className="text-gray-400">Learner:</span>{" "}
+                              <span className="text-gray-400">{t('learner')}:</span>{" "}
                               {cert.learner?.name || "N/A"} (
                               {cert.learner?.email || "N/A"})
                             </p>
                             <p className="text-gray-300 text-sm">
                               <span className="text-gray-400">
-                                Certificate ID:
+                                {t('certificateId')}:
                               </span>{" "}
                               {cert.certificateId}
                             </p>
                             <p className="text-gray-300 text-sm">
-                              <span className="text-gray-400">Issued:</span>{" "}
+                              <span className="text-gray-400">{t('issued')}:</span>{" "}
                               {new Date(
                                 cert.issueDate || cert.createdAt
                               ).toLocaleDateString()}
@@ -1465,21 +1467,21 @@ export default function IssuerDashboard() {
                         <div className="grid md:grid-cols-2 gap-3 text-sm text-gray-300 mb-4">
                           {(cert.studentUniqueCode || cert.uniqueId) && (
                             <p>
-                              <span className="text-gray-400">Learner ID:</span>{" "}
+                              <span className="text-gray-400">{t('learnerId')}:</span>{" "}
                               {cert.studentUniqueCode || cert.uniqueId}
                             </p>
                           )}
                           {Array.isArray(cert.modulesAwarded) &&
                             cert.modulesAwarded.length > 0 && (
                               <p>
-                                <span className="text-gray-400">Modules:</span>{" "}
+                                <span className="text-gray-400">{t('modules')}:</span>{" "}
                                 {cert.modulesAwarded.join(", ")}
                               </p>
                             )}
                           {cert.metadataHash && (
                             <p className="font-mono text-xs break-all">
                               <span className="text-gray-400 normal-case font-sans">
-                                Metadata Hash:
+                                {t('metadataHash')}:
                               </span>{" "}
                               {cert.metadataHash}
                             </p>
@@ -1487,7 +1489,7 @@ export default function IssuerDashboard() {
                           {cert.artifactHash && (
                             <p className="font-mono text-xs break-all">
                               <span className="text-gray-400 normal-case font-sans">
-                                PDF Hash:
+                                {t('pdfHash')}:
                               </span>{" "}
                               {cert.artifactHash}
                             </p>
@@ -1495,7 +1497,7 @@ export default function IssuerDashboard() {
                           {cert.storage?.canonical?.hash && (
                             <p className="font-mono text-xs break-all">
                               <span className="text-gray-400 normal-case font-sans">
-                                Canonical Hash:
+                                {t('canonicalHash')}:
                               </span>{" "}
                               {cert.storage.canonical.hash}
                             </p>
@@ -1503,21 +1505,21 @@ export default function IssuerDashboard() {
                           {cert.merkleRoot && (
                             <p className="font-mono text-xs break-all">
                               <span className="text-gray-400 normal-case font-sans">
-                                Merkle Root:
+                                {t('merkleRoot')}:
                               </span>{" "}
                               {cert.merkleRoot}
                             </p>
                           )}
                           {cert.batchId && (
                             <p>
-                              <span className="text-gray-400">Batch ID:</span>{" "}
+                              <span className="text-gray-400">{t('batchId')}:</span>{" "}
                               {cert.batchId}
                             </p>
                           )}
                           {cert.blockchainTxHash && (
                             <p className="font-mono text-xs break-all">
                               <span className="text-gray-400 normal-case font-sans">
-                                Tx Hash:
+                                {t('txHash')}:
                               </span>{" "}
                               {cert.blockchainTxHash}
                             </p>
@@ -1530,28 +1532,28 @@ export default function IssuerDashboard() {
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
                           >
                             <i className="bx bx-file"></i>
-                            Certificate PDF
+                            {t('certificatePdf')}
                           </button>
                           <button
                             onClick={() => downloadMetadata(cert)}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
                           >
                             <i className="bx bx-data"></i>
-                            Metadata JSON
+                            {t('metadataJson')}
                           </button>
                           <button
                             onClick={() => downloadProof(cert)}
                             className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
                           >
                             <i className="bx bx-shield-alt-2"></i>
-                            Proof Package
+                            {t('proofPackage')}
                           </button>
                           <button
                             onClick={() => downloadCanonical(cert)}
                             className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
                           >
                             <i className="bx bx-code-curly"></i>
-                            Canonical Payload
+                            {t('canonicalPayload')}
                           </button>
                           {cert.blockchainTxHash && (
                             <a
@@ -1561,7 +1563,7 @@ export default function IssuerDashboard() {
                               className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
                             >
                               <i className="bx bx-link-external"></i>
-                              View Transaction
+                              {t('viewTransaction')}
                             </a>
                           )}
                         </div>
@@ -1572,7 +1574,7 @@ export default function IssuerDashboard() {
                             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
                           >
                             <i className="bx bx-x-circle"></i>
-                            Revoke Certificate
+                            {t('revokeCertificate')}
                           </button>
                         )}
                       </div>
@@ -1587,13 +1589,13 @@ export default function IssuerDashboard() {
           {activeTab === "proofs" && (
             <div>
               <h2 className="text-2xl font-bold text-white mb-6">
-                Pending Proof Reviews
+                {t('pendingProofReviews')}
               </h2>
 
               {proofs.length === 0 ? (
                 <div className="text-center py-12">
                   <i className="bx bx-check-circle text-6xl text-gray-600 mb-4"></i>
-                  <p className="text-gray-400">No pending proofs</p>
+                  <p className="text-gray-400">{t('noPendingProofs')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1607,10 +1609,10 @@ export default function IssuerDashboard() {
                           {proof.learner?.name || "Anonymous"}
                         </h3>
                         <p className="text-gray-400">
-                          Module: {proof.moduleTitle || "N/A"}
+                          {t('module')}: {proof.moduleTitle || "N/A"}
                         </p>
                         <p className="text-gray-400">
-                          Course: {proof.course?.title || "N/A"}
+                          {t('course')}: {proof.course?.title || "N/A"}
                         </p>
                       </div>
 
@@ -1622,7 +1624,7 @@ export default function IssuerDashboard() {
                           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
                         >
                           <i className="bx bx-check"></i>
-                          Approve
+                          {t('approve')}
                         </button>
                         <button
                           onClick={() =>
@@ -1631,7 +1633,7 @@ export default function IssuerDashboard() {
                           className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors flex items-center gap-2"
                         >
                           <i className="bx bx-x"></i>
-                          Reject
+                          {t('reject')}
                         </button>
                       </div>
                     </div>
@@ -1645,7 +1647,7 @@ export default function IssuerDashboard() {
           {activeTab === "courses" && (
             <div>
               <h2 className="text-2xl font-bold text-white mb-6">
-                Manage Courses
+                {t('manageCourses')}
               </h2>
 
               <form
@@ -1653,13 +1655,13 @@ export default function IssuerDashboard() {
                 className="mb-8 space-y-6 bg-gray-700/50 border border-gray-600 rounded-lg p-6"
               >
                 <h3 className="text-xl font-bold text-white">
-                  Create New Course
+                  {t('createNewCourse')}
                 </h3>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-gray-300 mb-2">
-                      Course Title *
+                      {t('courseTitle')}
                     </label>
                     <input
                       type="text"
@@ -1674,7 +1676,7 @@ export default function IssuerDashboard() {
 
                   <div>
                     <label className="block text-gray-300 mb-2">
-                      Duration (hours)
+                      {t('durationHours')}
                     </label>
                     <input
                       type="number"
@@ -1692,7 +1694,7 @@ export default function IssuerDashboard() {
 
                 <div>
                   <label className="block text-gray-300 mb-2">
-                    Description
+                    {t('description')}
                   </label>
                   <textarea
                     value={courseForm.description}
@@ -1709,7 +1711,7 @@ export default function IssuerDashboard() {
 
                 <div>
                   <label className="block text-gray-300 mb-2">
-                    Modules (comma-separated)
+                    {t('modulesCommaSeparated')}
                   </label>
                   <input
                     type="text"
@@ -1730,12 +1732,12 @@ export default function IssuerDashboard() {
                   {isSubmitting ? (
                     <>
                       <i className="bx bx-loader-alt animate-spin"></i>
-                      Creating...
+                      {t('creating')}
                     </>
                   ) : (
                     <>
                       <i className="bx bx-plus"></i>
-                      Create Course
+                      {t('createCourse')}
                     </>
                   )}
                 </button>
@@ -1743,10 +1745,10 @@ export default function IssuerDashboard() {
 
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-white">
-                  Existing Courses
+                  {t('existingCourses')}
                 </h3>
                 {courses.length === 0 ? (
-                  <p className="text-gray-400">No courses yet</p>
+                  <p className="text-gray-400">{t('noCoursesYet')}</p>
                 ) : (
                   courses.map((course) => (
                     <div
@@ -1759,11 +1761,11 @@ export default function IssuerDashboard() {
                       <p className="text-gray-400 mb-2">{course.description}</p>
                       {course.modules && course.modules.length > 0 && (
                         <p className="text-gray-400 text-sm">
-                          Modules: {course.modules.join(", ")}
+                          {t('modules')}: {course.modules.join(", ")}
                         </p>
                       )}
                       <p className="text-gray-400 text-sm mt-2">
-                        Certificates issued: {course.certificateCount || 0}
+                        {t('certificatesIssuedCount')}: {course.certificateCount || 0}
                       </p>
                     </div>
                   ))
@@ -1776,20 +1778,20 @@ export default function IssuerDashboard() {
           {activeTab === "blockchain" && (
             <div>
               <h2 className="text-2xl font-bold text-white mb-6">
-                Anchor Certificate Hash
+                {t('anchorCertificateHash')}
               </h2>
 
               <div className="grid gap-6 mb-8 md:grid-cols-2">
                 <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-6">
                   <h3 className="text-xl font-bold text-white mb-4">
-                    Wallet Status
+                    {t('walletStatus')}
                   </h3>
                   <p className="text-gray-300 mb-2">
-                    <span className="text-gray-400">Account:</span>{" "}
+                    <span className="text-gray-400">{t('account')}:</span>{" "}
                     {displayAccount}
                   </p>
                   <p className="text-gray-300 mb-4">
-                    <span className="text-gray-400">Network:</span>{" "}
+                    <span className="text-gray-400">{t('network')}:</span>{" "}
                     {displayChainName}
                   </p>
                   <button
@@ -1799,27 +1801,23 @@ export default function IssuerDashboard() {
                   >
                     <i className="bx bx-wallet text-lg"></i>
                     {metamaskAccount
-                      ? "Reconnect Wallet"
-                      : "Connect Wallet"}
+                      ? t('reconnectWallet')
+                      : t('connectWallet')}
                   </button>
                 </div>
 
                 <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-6">
                   <h3 className="text-xl font-bold text-white mb-4">
-                    How Anchoring Works
+                    {t('howAnchoringWorks')}
                   </h3>
                   <p className="text-gray-300 mb-2">
-                    1. Copy the hash you wish to anchor (individual certificate
-                    hash or Merkle root).
+                    {t('anchoringStep1')}
                   </p>
                   <p className="text-gray-300 mb-2">
-                    2. Optionally provide a contract address that stores
-                    transaction metadata, otherwise the transaction sends data
-                    to your wallet.
+                    {t('anchoringStep2')}
                   </p>
                   <p className="text-gray-300">
-                    3. Submit the transaction and wait for confirmation. Track
-                    the resulting transaction hash on your explorer.
+                    {t('anchoringStep3')}
                   </p>
                 </div>
               </div>
@@ -1830,7 +1828,7 @@ export default function IssuerDashboard() {
               >
                 <div>
                   <label className="block text-gray-300 mb-2">
-                    Certificate or Merkle Hash *
+                    {t('certificateOrMerkleHash')}
                   </label>
                   <input
                     type="text"
@@ -1841,25 +1839,23 @@ export default function IssuerDashboard() {
                     required
                   />
                   <p className="text-gray-500 text-sm mt-2">
-                    The value is sent as the transaction data field. Ensure the
-                    hash is hex-encoded.
+                    {t('hashHelpText')}
                   </p>
                 </div>
 
                 <div>
                   <label className="block text-gray-300 mb-2">
-                    Target Contract Address (optional)
+                    {t('targetContractAddress')}
                   </label>
                   <input
                     type="text"
                     value={contractAddress}
                     onChange={(e) => setContractAddress(e.target.value)}
                     className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                    placeholder="Defaults to your connected wallet"
+                    placeholder={t('defaultsToWallet')}
                   />
                   <p className="text-gray-500 text-sm mt-2">
-                    Gas fees apply. Leave empty to anchor directly to your
-                    wallet address.
+                    {t('gasFeesApply')}
                   </p>
                 </div>
 
@@ -1902,18 +1898,17 @@ export default function IssuerDashboard() {
                     {isAnchoring ? (
                       <>
                         <i className="bx bx-loader-alt animate-spin"></i>
-                        Anchoring...
+                        {t('anchoring')}
                       </>
                     ) : (
                       <>
                         <i className="bx bx-link-alt"></i>
-                        Anchor Hash
+                        {t('anchorHash')}
                       </>
                     )}
                   </button>
                   <p className="text-gray-500 text-sm">
-                    MetaMask prompts will appear in your browser to authorize
-                    the transaction.
+                    {t('metamaskPrompt')}
                   </p>
                 </div>
               </form>
@@ -1924,13 +1919,13 @@ export default function IssuerDashboard() {
           {activeTab === "batches" && (
             <div>
               <h2 className="text-2xl font-bold text-white mb-6">
-                Certificate Batches
+                {t('certificateBatches')}
               </h2>
 
               {batches.length === 0 ? (
                 <div className="text-center py-12">
                   <i className="bx bx-layer text-6xl text-gray-600 mb-4"></i>
-                  <p className="text-gray-400">No batches yet</p>
+                  <p className="text-gray-400">{t('noBatchesYet')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1942,18 +1937,18 @@ export default function IssuerDashboard() {
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-xl font-bold text-white mb-2">
-                            Batch #{batch.batchId}
+                            {t('batchNumber')}{batch.batchId}
                           </h3>
                           <p className="text-gray-400">
-                            Created:{" "}
+                            {t('created')}:{" "}
                             {new Date(batch.createdAt).toLocaleString()}
                           </p>
                           <p className="text-gray-400">
-                            Certificates: {batch.certificateCount || 0}
+                            {t('certificatesCount')}: {batch.certificateCount || 0}
                           </p>
                           {batch.merkleRoot && (
                             <p className="text-gray-400 text-sm font-mono">
-                              Merkle Root: {batch.merkleRoot.slice(0, 20)}...
+                              {t('merkleRoot')}: {batch.merkleRoot.slice(0, 20)}...
                             </p>
                           )}
                         </div>

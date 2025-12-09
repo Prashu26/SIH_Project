@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import API_BASE from '../services/api';
 import 'boxicons/css/boxicons.min.css';
+import { useLanguage } from '../contexts/LanguageContext';
 
 /**
  * Verify component
@@ -14,6 +15,7 @@ import 'boxicons/css/boxicons.min.css';
  */
 
 export default function Verify() {
+  const { t } = useLanguage();
   // credential ID lookup removed - verification uses drag & drop PDF only
   const [result, setResult] = useState(null);
   const [file, setFile] = useState(null);
@@ -35,10 +37,10 @@ export default function Verify() {
   const fileInputRef = useRef(null);
 
   const features = [
-    { icon: 'bx-shield-check', title: 'Blockchain Security', description: 'Immutable & tamper-proof credentials' },
-    { icon: 'bx-time', title: 'Instant Verification', description: 'Real-time certificate validation' },
-    { icon: 'bx-globe', title: 'Global Recognition', description: 'Credentials trusted worldwide' },
-    { icon: 'bx-fingerprint', title: 'Digital Identity', description: 'Secure digital identity for learners' }
+    { icon: 'bx-shield-check', title: t('blockchainSecurity'), description: t('blockchainSecurityDesc') },
+    { icon: 'bx-time', title: t('instantVerification'), description: t('instantVerificationDesc') },
+    { icon: 'bx-globe', title: t('globalRecognition'), description: t('globalRecognitionDesc') },
+    { icon: 'bx-fingerprint', title: t('digitalIdentity'), description: t('digitalIdentityDesc') }
   ];
 
   const winterGradients = [
@@ -58,11 +60,11 @@ export default function Verify() {
     if (incomingEvent && incomingEvent.preventDefault) incomingEvent.preventDefault();
     setError(''); setResult(null);
     const targetFile = file;
-    if (!targetFile) { setError('Please choose a file to verify.'); return; }
+    if (!targetFile) { setError(t('pleaseChooseFile')); return; }
 
     // Basic file type validation
     if (targetFile.type !== "application/pdf" && !targetFile.name.toLowerCase().endsWith('.pdf')) {
-      setError('Only PDF files are accepted.');
+      setError(t('onlyPdfAccepted'));
       return;
     }
 
@@ -71,8 +73,8 @@ export default function Verify() {
       const form = new FormData(); form.append('file', targetFile);
       const res = await fetch(`${API_BASE}/api/verify/upload`, { method: 'POST', body: form });
       const data = await res.json();
-      if (!res.ok && res.status === 404) setError('No certificate matches the uploaded file.');
-      else if (!res.ok) setError(data.message || 'Verification failed');
+      if (!res.ok && res.status === 404) setError(t('noCertificateMatch'));
+      else if (!res.ok) setError(data.message || t('verificationFailed'));
       else setResult({
         ...data,
         status: data.success ? (data.status === 'Valid' ? 'Authentic' : data.status) : 'Invalid',
@@ -80,7 +82,7 @@ export default function Verify() {
         blockchain: data.blockchain
       });
     } catch (err) {
-      setError(err.message || 'Unexpected error while verifying file.');
+      setError(err.message || t('unexpectedError'));
     } finally { setIsLoading(false); }
   };
 
@@ -205,7 +207,7 @@ export default function Verify() {
         <div className="text-center mb-16 relative">
           <h1 className="text-5xl font-bold mb-6">
             <span className="bg-gradient-to-r from-sky-200 to-indigo-200 bg-clip-text text-transparent">
-              Verify Credentials
+              {t('verifyCertificateTitle')}
             </span>
           </h1>
         </div>
@@ -219,14 +221,14 @@ export default function Verify() {
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-tr from-sky-300/40 to-indigo-300/40 shadow-[0_8px_30px_rgba(99,102,241,0.06)]">
                 <i className="bx bx-snowflake text-2xl text-white/90"></i>
               </div>
-              <h2 className="text-2xl font-semibold text-sky-100">Quick Verification</h2>
+              <h2 className="text-2xl font-semibold text-sky-100">{t('quickVerification')}</h2>
             </div>
 
             {/* Note: credential ID lookup removed - Drag & Drop only (auto verifies) */}
 
             {/* Drag & Drop Upload Box */}
             <div className="mb-4">
-              <label className="block text-sm text-sky-200 mb-2">Upload Certificate (PDF)</label>
+              <label className="block text-sm text-sky-200 mb-2">{t('uploadPDF')}</label>
 
               <div
                 onDragOver={(e) => { e.preventDefault(); }}
@@ -264,9 +266,7 @@ export default function Verify() {
                 <div className="absolute inset-0 flex items-center justify-center vp-perspective">
                   <div className="vp-cube" aria-hidden>
                     <div className="vp-face front flex-col">
-                      <div className="text-3xl">DRAG</div>
-                      <div className="text-5xl font-extrabold my-1"> & </div>
-                      <div className="text-3xl">DROP</div>
+                      <div className="text-xl text-center px-2 font-bold">{t('dragAndDrop')}</div>
                     </div>
                     <div className="vp-face right"></div>
                     <div className="vp-face top"></div>
@@ -301,8 +301,8 @@ export default function Verify() {
 
             {/* Local Hardhat store/verify UI */}
             <div className="mt-6 p-4 rounded-lg border border-slate-700/20 bg-black/20">
-              <h4 className="text-lg text-sky-100 font-semibold mb-2">Local Hardhat (store / verify)</h4>
-              <p className="text-sm text-sky-200/70 mb-3">Paste certificate JSON or upload a JSON file, or provide a regNo to store/verify against the local Hardhat contract.</p>
+              <h4 className="text-lg text-sky-100 font-semibold mb-2">{t('localHardhatTitle')}</h4>
+              <p className="text-sm text-sky-200/70 mb-3">{t('localHardhatDesc')}</p>
 
               <div className="mb-3">
                 <textarea className="w-full h-28 p-2 rounded bg-transparent border border-slate-700 text-sky-100" value={localJsonText} onChange={(e) => setLocalJsonText(e.target.value)} placeholder='{"name":"Alice","reg_no":"18CS1234"}' />
@@ -314,11 +314,11 @@ export default function Verify() {
               </div>
 
               <div className="flex gap-3">
-                <button className="px-4 py-2 bg-indigo-600 text-white rounded" onClick={() => callLocalEndpoint('store')} disabled={localLoading}>Store on Local Chain</button>
-                <button className="px-4 py-2 bg-emerald-600 text-white rounded" onClick={() => callLocalEndpoint('verify')} disabled={localLoading}>Verify on Local Chain</button>
+                <button className="px-4 py-2 bg-indigo-600 text-white rounded" onClick={() => callLocalEndpoint('store')} disabled={localLoading}>{t('storeOnLocalChain')}</button>
+                <button className="px-4 py-2 bg-emerald-600 text-white rounded" onClick={() => callLocalEndpoint('verify')} disabled={localLoading}>{t('verifyOnLocalChain')}</button>
               </div>
 
-              {localLoading && <p className="text-sky-200 text-sm mt-2">Processing...</p>}
+              {localLoading && <p className="text-sky-200 text-sm mt-2">{t('processing')}</p>}
               {localError && <p className="text-rose-400 text-sm mt-2">{localError}</p>}
               {localResult && (
                 <div className="mt-3 text-xs text-sky-100 bg-black/40 p-2 rounded">
@@ -332,7 +332,7 @@ export default function Verify() {
               <div className="mt-6">
                 {/* Simplified result: only show valid/invalid message in template colors */}
                 <div className={`rounded-lg p-6 text-center font-semibold text-lg ${result.success ? 'bg-emerald-600/90 text-white' : 'bg-rose-600/90 text-white'}`}>
-                  {result.success ? 'Valid Certificate — This PDF is authentic' : 'Invalid Certificate — This PDF is NOT authentic'}
+                  {result.success ? t('validCertificateMsg') : t('invalidCertificateMsg')}
                 </div>
                 {result.message && <p className="mt-3 text-sm text-sky-200/80 text-center">{result.message}</p>}
               </div>
@@ -343,7 +343,7 @@ export default function Verify() {
 
         {/* Feature highlights */}
         <div className="mb-12">
-          <h2 className="text-3xl font-bold text-center text-sky-100 mb-8">Why Blockchain Verification?</h2>
+          <h2 className="text-3xl font-bold text-center text-sky-100 mb-8">{t('whyBlockchainVerification')}</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((f, i) => (
               <div key={i} className="relative rounded-2xl p-6 bg-white/3 border border-white/6 backdrop-blur-sm text-center">

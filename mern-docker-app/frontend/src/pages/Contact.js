@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import 'boxicons/css/boxicons.min.css';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Contact = () => {
+    const { t } = useLanguage();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -45,50 +47,50 @@ const Contact = () => {
     const contactMethods = [
         {
             icon: 'bx-envelope',
-            title: 'Email Support',
-            description: 'Get help with technical issues or general inquiries',
+            title: t('emailSupport'),
+            description: t('contactDesc1'),
             contact: 'support@skillcredentialing.com',
-            availability: 'Response within 24 hours'
+            availability: t('availability24h')
         },
         {
             icon: 'bx-phone',
-            title: 'Phone Support',
-            description: 'Speak directly with our support team',
+            title: t('phoneSupport'),
+            description: t('contactDesc2'),
             contact: '+1 (555) 123-4567',
-            availability: 'Mon-Fri, 9 AM - 6 PM EST'
+            availability: t('availabilityMonFri')
         },
         {
             icon: 'bx-chat',
-            title: 'Live Chat',
-            description: 'Instant messaging with our support agents',
-            contact: 'Available on website',
-            availability: 'Available 24/7'
+            title: t('liveChat'),
+            description: t('contactDesc3'),
+            contact: t('contactWebsite'),
+            availability: t('availability247')
         },
         {
             icon: 'bx-map',
-            title: 'Office Location',
-            description: 'Visit us at our headquarters',
-            contact: '123 Blockchain Ave, Tech City, TC 12345',
-            availability: 'By appointment only'
+            title: t('officeLocation'),
+            description: t('contactDesc4'),
+            contact: t('contactAddress'),
+            availability: t('availabilityAppointment')
         }
     ];
 
     const faqItems = [
         {
-            question: 'How do I verify a certificate?',
-            answer: 'Simply enter the certificate ID on our verification page or scan the QR code on the certificate. Our system will instantly validate its authenticity using blockchain technology.'
+            question: t('faqQ1'),
+            answer: t('faqA1')
         },
         {
-            question: 'Is my data secure?',
-            answer: 'Yes, we use military-grade encryption and blockchain technology to ensure your data is completely secure and tamper-proof. We never store sensitive personal information on centralized servers.'
+            question: t('faqQ2'),
+            answer: t('faqA2')
         },
         {
-            question: 'How much does it cost?',
-            answer: 'We offer flexible pricing plans for institutions. Individual learners can verify certificates for free. Contact our sales team for institutional pricing details.'
+            question: t('faqQ3'),
+            answer: t('faqA3')
         },
         {
-            question: 'Can I integrate with my existing system?',
-            answer: 'Absolutely! We provide comprehensive APIs and SDKs for easy integration with existing learning management systems and HR platforms.'
+            question: t('faqQ4'),
+            answer: t('faqA4')
         }
     ];
 
@@ -99,12 +101,11 @@ const Contact = () => {
                 <div className="text-center mb-16">
                     <h1 className="text-5xl font-bold mb-6">
                         <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                            Get In Touch
+                            {t('contactTitle')}
                         </span>
                     </h1>
                     <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                        Have questions about our platform? Need help with verification? 
-                        We're here to assist you every step of the way.
+                        {t('contactDesc')}
                     </p>
                 </div>
 

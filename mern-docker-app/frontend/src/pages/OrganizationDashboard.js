@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import API_BASE from '../services/api';
 import Messages from '../components/Messages';
 import CertificateVerification from '../components/CertificateVerification';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Icons
 const Icons = {
@@ -20,6 +21,7 @@ const Icons = {
 };
 
 const OrganizationDashboard = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
   const [organization, setOrganization] = useState(null);
   const [studentPool, setStudentPool] = useState([]);
@@ -122,18 +124,18 @@ const OrganizationDashboard = () => {
         },
         body: JSON.stringify({
           recipientId: studentId,
-          message: `Hello! We're interested in your profile based on your verified certificates. We'd like to discuss potential opportunities with ${organization?.organizationName}.`
+          message: t('initialMessage').replace('{orgName}', organization?.organizationName)
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        alert('Conversation initiated successfully!');
+        alert(t('conversationInitiated'));
         fetchDashboardData(); // Refresh conversations
         setActiveTab('messages'); // Switch to messages tab
       }
     } catch (error) {
-      alert('Error initiating conversation');
+      alert(t('conversationError'));
     }
   };
 
@@ -149,14 +151,14 @@ const OrganizationDashboard = () => {
       return data;
     } catch (error) {
       console.error('Error verifying certificate:', error);
-      return { valid: false, error: 'Verification failed' };
+      return { valid: false, error: t('verificationFailed') };
     }
   };
 
   const getLocation = (student) => {
     const { district, state } = student.personalInfo || {};
     const parts = [district, state].filter(Boolean);
-    return parts.length > 0 ? parts.join(', ') : 'Location not available';
+    return parts.length > 0 ? parts.join(', ') : t('locationNotAvailable');
   };
 
   const filteredStudents = studentPool.filter(student => {
@@ -184,13 +186,13 @@ const OrganizationDashboard = () => {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-xl text-red-600 mb-4">Error loading dashboard</div>
+        <div className="text-xl text-red-600 mb-4">{t('errorLoadingDashboard')}</div>
         <div className="text-gray-600 mb-4">{error}</div>
         <button 
           onClick={fetchDashboardData}
           className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
-          Retry
+          {t('retry')}
         </button>
       </div>
     );
@@ -222,11 +224,11 @@ const OrganizationDashboard = () => {
         </div>
         
         <nav className="flex-1 py-6 space-y-1">
-          <SidebarItem id="overview" label="Overview" icon={Icons.Dashboard} />
-          <SidebarItem id="talent-pool" label="Talent Pool" icon={Icons.Users} />
-          <SidebarItem id="messages" label="Messages" icon={Icons.Message} />
-          <SidebarItem id="hiring-requirements" label="Hiring" icon={Icons.Briefcase} />
-          <SidebarItem id="verification" label="Verification" icon={Icons.CheckBadge} />
+          <SidebarItem id="overview" label={t('overview')} icon={Icons.Dashboard} />
+          <SidebarItem id="talent-pool" label={t('talentPool')} icon={Icons.Users} />
+          <SidebarItem id="messages" label={t('messages')} icon={Icons.Message} />
+          <SidebarItem id="hiring-requirements" label={t('hiring')} icon={Icons.Briefcase} />
+          <SidebarItem id="verification" label={t('verification')} icon={Icons.CheckBadge} />
         </nav>
 
         <div className="p-4 border-t">
@@ -235,7 +237,7 @@ const OrganizationDashboard = () => {
             className="flex items-center space-x-3 px-4 py-2 w-full text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           >
             <Icons.Logout />
-            <span>Logout</span>
+            <span>{t('logout')}</span>
           </button>
         </div>
       </div>
@@ -245,13 +247,13 @@ const OrganizationDashboard = () => {
         <header className="bg-white shadow-sm sticky top-0 z-10">
           <div className="px-8 py-4 flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-800 capitalize">
-              {activeTab.replace('-', ' ')}
+              {t(activeTab.replace('-', '')) || activeTab.replace('-', ' ')}
             </h2>
             <div className="flex items-center space-x-4">
               <button 
                 onClick={handleLogout}
                 className="text-gray-500 hover:text-red-600 transition-colors"
-                title="Logout"
+                title={t('logout')}
               >
                 <Icons.Logout />
               </button>
@@ -269,7 +271,7 @@ const OrganizationDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-gray-500 text-sm font-medium">Total Students</h3>
+                    <h3 className="text-gray-500 text-sm font-medium">{t('totalStudents')}</h3>
                     <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
                       <Icons.Users />
                     </div>
@@ -279,7 +281,7 @@ const OrganizationDashboard = () => {
                 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-gray-500 text-sm font-medium">Active Conversations</h3>
+                    <h3 className="text-gray-500 text-sm font-medium">{t('activeConversations')}</h3>
                     <div className="p-2 bg-green-50 rounded-lg text-green-600">
                       <Icons.Message />
                     </div>
@@ -289,7 +291,7 @@ const OrganizationDashboard = () => {
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-gray-500 text-sm font-medium">Open Positions</h3>
+                    <h3 className="text-gray-500 text-sm font-medium">{t('openPositions')}</h3>
                     <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
                       <Icons.Briefcase />
                     </div>
@@ -301,19 +303,19 @@ const OrganizationDashboard = () => {
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Organization Details</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">{t('organizationDetails')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <div className="flex items-center text-gray-600">
-                      <span className="w-24 font-medium">Email:</span>
+                      <span className="w-24 font-medium">{t('email')}:</span>
                       <span>{organization?.email}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
-                      <span className="w-24 font-medium">Contact:</span>
+                      <span className="w-24 font-medium">{t('contact')}:</span>
                       <span>{organization?.contactNumber}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
-                      <span className="w-24 font-medium">Website:</span>
+                      <span className="w-24 font-medium">{t('website')}:</span>
                       <a href={organization?.website} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
                         {organization?.website}
                       </a>
@@ -321,11 +323,11 @@ const OrganizationDashboard = () => {
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center text-gray-600">
-                      <span className="w-24 font-medium">Location:</span>
+                      <span className="w-24 font-medium">{t('location')}:</span>
                       <span>{organization?.headOfficeLocation?.city}, {organization?.headOfficeLocation?.state}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
-                      <span className="w-24 font-medium">Reg ID:</span>
+                      <span className="w-24 font-medium">{t('regId')}:</span>
                       <span>{organization?.registrationId}</span>
                     </div>
                   </div>
@@ -346,7 +348,7 @@ const OrganizationDashboard = () => {
                     </div>
                     <input
                       type="text"
-                      placeholder="Search by skills..."
+                      placeholder={t('searchBySkills')}
                       value={filters.skills}
                       onChange={(e) => setFilters({...filters, skills: e.target.value})}
                       className="pl-10 w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
@@ -358,7 +360,7 @@ const OrganizationDashboard = () => {
                     </div>
                     <input
                       type="text"
-                      placeholder="Filter by location..."
+                      placeholder={t('filterByLocation')}
                       value={filters.location}
                       onChange={(e) => setFilters({...filters, location: e.target.value})}
                       className="pl-10 w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
@@ -368,7 +370,7 @@ const OrganizationDashboard = () => {
                     onClick={() => setFilters({skills: '', location: '', experience: '', qualification: ''})}
                     className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium"
                   >
-                    Clear
+                    {t('clear')}
                   </button>
                 </div>
               </div>
@@ -395,7 +397,7 @@ const OrganizationDashboard = () => {
 
                       <div className="space-y-3">
                         <div>
-                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Skills</p>
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('skills')}</p>
                           <div className="flex flex-wrap gap-1.5">
                             {student.skills && student.skills.length > 0 ? (
                               student.skills.slice(0, 5).map((skill, idx) => (
@@ -404,7 +406,7 @@ const OrganizationDashboard = () => {
                                 </span>
                               ))
                             ) : (
-                              <span className="text-xs text-gray-400 italic">No skills listed</span>
+                              <span className="text-xs text-gray-400 italic">{t('noSkillsListed')}</span>
                             )}
                             {student.skills && student.skills.length > 5 && (
                               <span className="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md">
@@ -415,10 +417,10 @@ const OrganizationDashboard = () => {
                         </div>
 
                         <div>
-                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Certificates</p>
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('certificates')}</p>
                           <div className="flex items-center space-x-2">
                             <span className="text-2xl font-bold text-gray-900">{student.certificates?.length || 0}</span>
-                            <span className="text-sm text-gray-500">Verified</span>
+                            <span className="text-sm text-gray-500">{t('verified')}</span>
                           </div>
                         </div>
                       </div>
@@ -429,13 +431,13 @@ const OrganizationDashboard = () => {
                         onClick={() => initiateConversation(student._id)}
                         className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
                       >
-                        Contact
+                        {t('contact')}
                       </button>
                       <button
                         onClick={() => setSelectedStudent(student)}
                         className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                       >
-                        View Profile
+                        {t('viewProfile')}
                       </button>
                       {student.certificates && student.certificates.length > 0 && (
                         <a
@@ -443,7 +445,7 @@ const OrganizationDashboard = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center w-10 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                          title="Download Latest Certificate"
+                          title={t('downloadLatestCertificate')}
                         >
                           <Icons.Download />
                         </a>
@@ -458,8 +460,8 @@ const OrganizationDashboard = () => {
                   <div className="mx-auto h-12 w-12 text-gray-400">
                     <Icons.Users />
                   </div>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No students found</h3>
-                  <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noStudentsFound')}</h3>
+                  <p className="mt-1 text-sm text-gray-500">{t('tryAdjustingFilters')}</p>
                 </div>
               )}
             </div>
@@ -471,7 +473,7 @@ const OrganizationDashboard = () => {
           {/* Verification Tab */}
           {activeTab === 'verification' && (
             <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Verify Certificates</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">{t('verifyCertificates')}</h3>
               <CertificateVerification />
             </div>
           )}
@@ -480,12 +482,12 @@ const OrganizationDashboard = () => {
           {activeTab === 'hiring-requirements' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold text-gray-900">Active Requirements</h3>
+                <h3 className="text-lg font-bold text-gray-900">{t('activeRequirements')}</h3>
                 <button
                   onClick={() => alert('Feature coming soon!')}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
                 >
-                  + Add Requirement
+                  {t('addRequirement')}
                 </button>
               </div>
 
@@ -498,15 +500,15 @@ const OrganizationDashboard = () => {
                         <p className="text-sm text-gray-500">{req.jobType} • {req.experienceLevel}</p>
                       </div>
                       <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-                        Active
+                        {t('active')}
                       </span>
                     </div>
                     
                     <div className="space-y-2 text-sm text-gray-600 mb-4">
-                      <p><span className="font-medium">Positions:</span> {req.numberOfPositions}</p>
-                      <p><span className="font-medium">Qualification:</span> {req.minimumQualification}</p>
+                      <p><span className="font-medium">{t('positions')}:</span> {req.numberOfPositions}</p>
+                      <p><span className="font-medium">{t('qualification')}:</span> {req.minimumQualification}</p>
                       {req.salaryRange && (
-                        <p><span className="font-medium">Salary:</span> {req.salaryRange.currency} {req.salaryRange.min} - {req.salaryRange.max}</p>
+                        <p><span className="font-medium">{t('salary')}:</span> {req.salaryRange.currency} {req.salaryRange.min} - {req.salaryRange.max}</p>
                       )}
                     </div>
 
@@ -519,13 +521,13 @@ const OrganizationDashboard = () => {
                     </div>
 
                     <div className="flex space-x-3 pt-4 border-t border-gray-100">
-                      <button className="text-blue-600 text-sm font-medium hover:text-blue-800">Edit</button>
-                      <button className="text-red-600 text-sm font-medium hover:text-red-800">Delete</button>
+                      <button className="text-blue-600 text-sm font-medium hover:text-blue-800">{t('edit')}</button>
+                      <button className="text-red-600 text-sm font-medium hover:text-red-800">{t('delete')}</button>
                     </div>
                   </div>
                 )) || (
                   <div className="col-span-2 text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-                    <p className="text-gray-500">No hiring requirements posted yet.</p>
+                    <p className="text-gray-500">{t('noHiringRequirements')}</p>
                   </div>
                 )}
               </div>
@@ -572,23 +574,23 @@ const OrganizationDashboard = () => {
                   {/* Left Column */}
                   <div className="lg:col-span-1 space-y-6">
                     <div className="bg-gray-50 p-6 rounded-xl">
-                      <h3 className="font-bold text-gray-900 mb-4">Personal Info</h3>
+                      <h3 className="font-bold text-gray-900 mb-4">{t('personalInfo')}</h3>
                       <div className="space-y-3 text-sm">
                         {selectedStudent.personalInfo?.fatherName && (
                           <div>
-                            <p className="text-gray-500 text-xs">Father's Name</p>
+                            <p className="text-gray-500 text-xs">{t('fathersName')}</p>
                             <p className="font-medium">{selectedStudent.personalInfo.fatherName}</p>
                           </div>
                         )}
                         {selectedStudent.personalInfo?.dob && (
                           <div>
-                            <p className="text-gray-500 text-xs">Date of Birth</p>
+                            <p className="text-gray-500 text-xs">{t('dateOfBirth')}</p>
                             <p className="font-medium">{selectedStudent.personalInfo.dob}</p>
                           </div>
                         )}
                         {selectedStudent.learnerId && (
                           <div>
-                            <p className="text-gray-500 text-xs">Learner ID</p>
+                            <p className="text-gray-500 text-xs">{t('learnerId')}</p>
                             <p className="font-medium">{selectedStudent.learnerId}</p>
                           </div>
                         )}
@@ -596,20 +598,20 @@ const OrganizationDashboard = () => {
                     </div>
 
                     <div className="bg-gray-50 p-6 rounded-xl">
-                      <h3 className="font-bold text-gray-900 mb-4">Skills</h3>
+                      <h3 className="font-bold text-gray-900 mb-4">{t('skills')}</h3>
                       <div className="flex flex-wrap gap-2">
                         {selectedStudent.skills?.map((skill, idx) => (
                           <span key={idx} className="bg-white border border-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm">
                             {skill}
                           </span>
-                        )) || <p className="text-gray-500 text-sm">No skills listed</p>}
+                        )) || <p className="text-gray-500 text-sm">{t('noSkillsListed')}</p>}
                       </div>
                     </div>
                   </div>
 
                   {/* Right Column */}
                   <div className="lg:col-span-2">
-                    <h3 className="text-xl font-bold text-gray-900 mb-6">Verified Certificates</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-6">{t('verifiedCertificates')}</h3>
                     <div className="space-y-4">
                       {console.log('Selected Student Certificates:', selectedStudent.certificates)}
                       {selectedStudent.certificates?.map((cert, idx) => (
@@ -618,17 +620,17 @@ const OrganizationDashboard = () => {
                             <div>
                               <h4 className="text-lg font-bold text-gray-900">{cert.course?.title || cert.courseName}</h4>
                               <p className="text-blue-600 font-medium">{cert.institute?.name || cert.issuedBy}</p>
-                              <p className="text-sm text-gray-500 mt-1">Issued: {new Date(cert.issueDate).toLocaleDateString()}</p>
+                              <p className="text-sm text-gray-500 mt-1">{t('issued')}: {new Date(cert.issueDate).toLocaleDateString()}</p>
                             </div>
                             <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold flex items-center">
                               <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                              VERIFIED
+                              {t('verified')}
                             </span>
                           </div>
                           
                           {cert.modulesAwarded && cert.modulesAwarded.length > 0 && (
                             <div className="mt-4">
-                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Modules Completed</p>
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('modulesCompleted')}</p>
                               <div className="flex flex-wrap gap-2">
                                 {cert.modulesAwarded.map((mod, mIdx) => (
                                   <span key={mIdx} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
@@ -648,14 +650,14 @@ const OrganizationDashboard = () => {
                                 className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
                               >
                                 <Icons.Download />
-                                <span className="ml-2">Download Certificate PDF</span>
+                                <span className="ml-2">{t('downloadCertificatePDF')}</span>
                               </a>
                             </div>
                           )}
                         </div>
                       )) || (
                         <div className="text-center py-8 bg-gray-50 rounded-xl">
-                          <p className="text-gray-500">No certificates found for this student.</p>
+                          <p className="text-gray-500">{t('noCertificatesFound')}</p>
                         </div>
                       )}
                     </div>
@@ -668,7 +670,7 @@ const OrganizationDashboard = () => {
                   onClick={() => setSelectedStudent(null)}
                   className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-white transition-colors"
                 >
-                  Close
+                  {t('close')}
                 </button>
                 <button
                   onClick={() => {
@@ -677,7 +679,7 @@ const OrganizationDashboard = () => {
                   }}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
                 >
-                  Contact Student
+                  {t('contactStudent')}
                 </button>
               </div>
             </div>

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import 'boxicons/css/boxicons.min.css';
 import API_BASE from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const CertificateVerification = () => {
+  const { t } = useLanguage();
   const [selectedFile, setSelectedFile] = useState(null);
   const [verificationResult, setVerificationResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -14,14 +16,14 @@ const CertificateVerification = () => {
       setSelectedFile(file);
       setError('');
     } else {
-      setError('Please select a PDF or image file');
+      setError(t('selectPdfOrImage'));
       setSelectedFile(null);
     }
   };
 
   const verifyByFileUpload = async () => {
     if (!selectedFile) {
-      setError('Please select a file to verify');
+      setError(t('selectFileToVerify'));
       return;
     }
 
@@ -41,12 +43,12 @@ const CertificateVerification = () => {
 
       setVerificationResult({
         ...result,
-        method: 'File Upload',
+        method: t('fileUpload'),
         input: selectedFile.name,
         fileHash: result.fileHash
       });
     } catch (err) {
-      setError('Failed to verify certificate file. Please check your connection and try again.');
+      setError(t('verifyFileFailed'));
     } finally {
       setLoading(false);
     }
@@ -88,10 +90,10 @@ const CertificateVerification = () => {
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Certificate Verification
+          {t('certificateVerificationTitle')}
         </h1>
         <p className="text-gray-600">
-          Verify the authenticity of certificates using blockchain technology
+          {t('certificateVerificationDesc')}
         </p>
       </div>
 
@@ -99,7 +101,7 @@ const CertificateVerification = () => {
       <div className="mb-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Upload Certificate File
+            {t('uploadCertificateFile')}
           </label>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
             <input
@@ -112,10 +114,10 @@ const CertificateVerification = () => {
             <label htmlFor="file-upload" className="cursor-pointer">
               <i className="bx bx-cloud-upload text-4xl text-gray-400 mb-2"></i>
               <p className="text-gray-600">
-                {selectedFile ? selectedFile.name : 'Click to select PDF or image file'}
+                {selectedFile ? selectedFile.name : t('clickToSelect')}
               </p>
               <p className="text-sm text-gray-500 mt-1">
-                Supported formats: PDF, JPG, PNG
+                {t('supportedFormats')}
               </p>
             </label>
           </div>
@@ -133,19 +135,19 @@ const CertificateVerification = () => {
       {/* Verify Button */}
       <div className="mb-8">
         <button
-          onClick={handleVerify}
+          onClick={verifyByFileUpload}
           disabled={loading || !selectedFile}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
         >
           {loading ? (
             <>
               <i className="bx bx-loader-alt animate-spin mr-2"></i>
-              Verifying...
+              {t('verifying')}
             </>
           ) : (
             <>
               <i className="bx bx-shield-check mr-2"></i>
-              Verify Certificate
+              {t('verifyCertificate')}
             </>
           )}
         </button>
@@ -157,43 +159,43 @@ const CertificateVerification = () => {
           <div className="flex items-center mb-4">
             {getStatusIcon(verificationResult.status)}
             <div className="ml-3">
-              <h3 className="text-lg font-semibold">Verification Result</h3>
-              <p className="text-sm opacity-75">Method: {verificationResult.method}</p>
+              <h3 className="text-lg font-semibold">{t('verificationResult')}</h3>
+              <p className="text-sm opacity-75">{t('method')}: {verificationResult.method}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <h4 className="font-medium mb-2">Status</h4>
+              <h4 className="font-medium mb-2">{t('status')}</h4>
               <p className="font-bold text-lg">{verificationResult.status}</p>
               <p className="text-sm mt-1">{verificationResult.message}</p>
             </div>
 
             {verificationResult.certificate && (
               <div>
-                <h4 className="font-medium mb-2">Certificate Details</h4>
+                <h4 className="font-medium mb-2">{t('certificateDetails')}</h4>
                 <div className="space-y-1 text-sm">
-                  <p><strong>ID:</strong> {verificationResult.certificate.certificateId}</p>
+                  <p><strong>{t('id')}:</strong> {verificationResult.certificate.certificateId}</p>
                   {verificationResult.certificate.learner && (
-                    <p><strong>Name:</strong> {verificationResult.certificate.learner.name}</p>
+                    <p><strong>{t('name')}:</strong> {verificationResult.certificate.learner.name}</p>
                   )}
                   {verificationResult.certificate.fatherName && (
-                    <p><strong>Father's Name:</strong> {verificationResult.certificate.fatherName}</p>
+                    <p><strong>{t('fathersName')}:</strong> {verificationResult.certificate.fatherName}</p>
                   )}
                   {verificationResult.certificate.motherName && (
-                    <p><strong>Mother's Name:</strong> {verificationResult.certificate.motherName}</p>
+                    <p><strong>{t('mothersName')}:</strong> {verificationResult.certificate.motherName}</p>
                   )}
                   {verificationResult.certificate.dob && (
-                    <p><strong>DOB:</strong> {verificationResult.certificate.dob}</p>
+                    <p><strong>{t('dob')}:</strong> {verificationResult.certificate.dob}</p>
                   )}
                   {verificationResult.certificate.course && (
-                    <p><strong>Course:</strong> {verificationResult.certificate.course.title}</p>
+                    <p><strong>{t('course')}:</strong> {verificationResult.certificate.course.title}</p>
                   )}
                   {verificationResult.certificate.trade && (
-                    <p><strong>Trade:</strong> {verificationResult.certificate.trade}</p>
+                    <p><strong>{t('trade')}:</strong> {verificationResult.certificate.trade}</p>
                   )}
                   {verificationResult.certificate.institute && (
-                    <p><strong>Institute:</strong> {verificationResult.certificate.institute.name}</p>
+                    <p><strong>{t('institute')}:</strong> {verificationResult.certificate.institute.name}</p>
                   )}
                   {verificationResult.certificate.address && (
                     <p><strong>Address:</strong> {verificationResult.certificate.address}, {verificationResult.certificate.district}, {verificationResult.certificate.state}</p>

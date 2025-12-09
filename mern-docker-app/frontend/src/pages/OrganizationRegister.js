@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import API_BASE from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const OrganizationRegister = () => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     organizationName: '',
     industry: '',
@@ -51,10 +53,10 @@ const OrganizationRegister = () => {
   ];
 
   const steps = [
-    { number: 1, title: 'Company Information', icon: '🏢' },
-    { number: 2, title: 'Location & Contact', icon: '📍' },
-    { number: 3, title: 'Hiring Requirements', icon: '💼' },
-    { number: 4, title: 'Authentication', icon: '🔐' }
+    { number: 1, title: t('companyInformation'), icon: '🏢' },
+    { number: 2, title: t('locationContact'), icon: '📍' },
+    { number: 3, title: t('hiringRequirements'), icon: '💼' },
+    { number: 4, title: t('authentication'), icon: '🔐' }
   ];
 
   const nextStep = () => {
@@ -143,13 +145,13 @@ const OrganizationRegister = () => {
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('passwordsDoNotMatch'));
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError(t('passwordTooShort'));
       setLoading(false);
       return;
     }
@@ -172,17 +174,17 @@ const OrganizationRegister = () => {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess('Organization registered successfully! You can now login.');
+        setSuccess(t('registrationSuccessful'));
         // Store token if you want to auto-login
         if (data.token) {
           localStorage.setItem('orgToken', data.token);
           localStorage.setItem('organization', JSON.stringify(data.organization));
         }
       } else {
-        setError(data.message || 'Registration failed');
+        setError(data.message || t('registrationFailed'));
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError(t('networkError'));
     } finally {
       setLoading(false);
     }
@@ -195,9 +197,9 @@ const OrganizationRegister = () => {
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="text-center">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Organization Registration
+              {t('organizationRegistration')}
             </h1>
-            <p className="text-gray-600 mt-2">Join our platform to connect with skilled professionals</p>
+            <p className="text-gray-600 mt-2">{t('createOrganizationAccount')}</p>
           </div>
         </div>
       </div>
@@ -215,7 +217,7 @@ const OrganizationRegister = () => {
                 }`}>
                   <span className="text-xl">{step.icon}</span>
                   <div className="text-sm font-medium hidden sm:block">
-                    <div>Step {step.number}</div>
+                    <div>{t('step')} {step.number}</div>
                     <div className="text-xs opacity-80">{step.title}</div>
                   </div>
                 </div>
@@ -268,15 +270,15 @@ const OrganizationRegister = () => {
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 flex items-center justify-center space-x-2">
                     <span className="text-3xl">🏢</span>
-                    <span>Company Information</span>
+                    <span>{t('companyInformation')}</span>
                   </h2>
-                  <p className="text-gray-600 mt-2">Tell us about your organization</p>
+                  <p className="text-gray-600 mt-2">{t('tellUsAboutOrganization')}</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
-                      Organization Name *
+                      {t('organizationName')} *
                     </label>
                     <input
                       type="text"
@@ -284,14 +286,14 @@ const OrganizationRegister = () => {
                       value={formData.organizationName}
                       onChange={handleInputChange}
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
-                      placeholder="Enter your organization name"
+                      placeholder={t('enterOrganizationName')}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
-                      Industry *
+                      {t('industry')} *
                     </label>
                     <select
                       name="industry"
@@ -300,7 +302,7 @@ const OrganizationRegister = () => {
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
                       required
                     >
-                      <option value="">Select Industry</option>
+                      <option value="">{t('selectIndustry')}</option>
                       {industryOptions.map(industry => (
                         <option key={industry} value={industry}>{industry}</option>
                       ))}
@@ -309,7 +311,7 @@ const OrganizationRegister = () => {
 
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
-                      Registration ID *
+                      {t('registrationId')} *
                     </label>
                     <input
                       type="text"
@@ -317,14 +319,14 @@ const OrganizationRegister = () => {
                       value={formData.registrationId}
                       onChange={handleInputChange}
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
-                      placeholder="Company registration number"
+                      placeholder={t('companyRegistrationNumber')}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
-                      Official Email *
+                      {t('officialEmail')} *
                     </label>
                     <input
                       type="email"
@@ -339,7 +341,7 @@ const OrganizationRegister = () => {
 
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
-                      Contact Number *
+                      {t('contactNumber')} *
                     </label>
                     <input
                       type="tel"
@@ -354,7 +356,7 @@ const OrganizationRegister = () => {
 
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
-                      Website
+                      {t('website')}
                     </label>
                     <input
                       type="url"
@@ -369,7 +371,7 @@ const OrganizationRegister = () => {
 
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
-                    Company Description
+                    {t('companyDescription')}
                   </label>
                   <textarea
                     name="profileDescription"
@@ -377,7 +379,7 @@ const OrganizationRegister = () => {
                     onChange={handleInputChange}
                     rows={4}
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none text-gray-800"
-                    placeholder="Brief description about your organization, culture, and mission..."
+                    placeholder={t('briefDescription')}
                   />
                 </div>
               </div>
@@ -389,21 +391,21 @@ const OrganizationRegister = () => {
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 flex items-center justify-center space-x-2">
                     <span className="text-3xl">📍</span>
-                    <span>Location & Contact Details</span>
+                    <span>{t('locationContactDetails')}</span>
                   </h2>
-                  <p className="text-gray-600 mt-2">Where are you located and who should we contact?</p>
+                  <p className="text-gray-600 mt-2">{t('whereLocated')}</p>
                 </div>
 
                 {/* Head Office Location */}
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
                     <span>🏢</span>
-                    <span>Head Office Location</span>
+                    <span>{t('headOfficeLocation')}</span>
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2 space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Address *
+                        {t('address')} *
                       </label>
                       <input
                         type="text"
@@ -411,14 +413,14 @@ const OrganizationRegister = () => {
                         value={formData.headOfficeLocation.address}
                         onChange={(e) => handleInputChange(e, 'headOfficeLocation')}
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
-                        placeholder="Building name, street address"
+                        placeholder={t('buildingName')}
                         required
                       />
                     </div>
                     
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        City *
+                        {t('city')} *
                       </label>
                       <input
                         type="text"
@@ -426,14 +428,14 @@ const OrganizationRegister = () => {
                         value={formData.headOfficeLocation.city}
                         onChange={(e) => handleInputChange(e, 'headOfficeLocation')}
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
-                        placeholder="City name"
+                        placeholder={t('cityName')}
                         required
                       />
                     </div>
 
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        State *
+                        {t('state')} *
                       </label>
                       <input
                         type="text"
@@ -441,14 +443,14 @@ const OrganizationRegister = () => {
                         value={formData.headOfficeLocation.state}
                         onChange={(e) => handleInputChange(e, 'headOfficeLocation')}
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
-                        placeholder="State name"
+                        placeholder={t('stateName')}
                         required
                       />
                     </div>
 
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Pincode
+                        {t('pincode')}
                       </label>
                       <input
                         type="text"
@@ -466,12 +468,12 @@ const OrganizationRegister = () => {
                 <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-xl border border-green-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
                     <span>👤</span>
-                    <span>Primary Contact Person</span>
+                    <span>{t('primaryContactPerson')}</span>
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Full Name *
+                        {t('fullName')} *
                       </label>
                       <input
                         type="text"
@@ -479,14 +481,14 @@ const OrganizationRegister = () => {
                         value={formData.contactPerson.name}
                         onChange={(e) => handleInputChange(e, 'contactPerson')}
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
-                        placeholder="Contact person name"
+                        placeholder={t('contactPersonName')}
                         required
                       />
                     </div>
 
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Designation *
+                        {t('designation')} *
                       </label>
                       <input
                         type="text"
@@ -494,14 +496,14 @@ const OrganizationRegister = () => {
                         value={formData.contactPerson.designation}
                         onChange={(e) => handleInputChange(e, 'contactPerson')}
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
-                        placeholder="HR Manager, CEO, etc."
+                        placeholder={t('hrManager')}
                         required
                       />
                     </div>
 
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Email *
+                        {t('email')} *
                       </label>
                       <input
                         type="email"
@@ -516,7 +518,7 @@ const OrganizationRegister = () => {
 
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Phone
+                        {t('phone')}
                       </label>
                       <input
                         type="tel"
@@ -538,15 +540,15 @@ const OrganizationRegister = () => {
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 flex items-center justify-center space-x-2">
                     <span className="text-3xl">💼</span>
-                    <span>Hiring Requirements</span>
+                    <span>{t('hiringRequirements')}</span>
                   </h2>
-                  <p className="text-gray-600 mt-2">What kind of talent are you looking for?</p>
+                  <p className="text-gray-600 mt-2">{t('whatTalent')}</p>
                 </div>
 
                 {hiringRequirements.map((requirement, index) => (
                   <div key={index} className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Position #{index + 1}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{t('position')} #{index + 1}</h3>
                       {hiringRequirements.length > 1 && (
                         <button
                           type="button"
@@ -563,7 +565,7 @@ const OrganizationRegister = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="block text-sm font-semibold text-gray-700">
-                          Job Title *
+                          {t('jobTitle')} *
                         </label>
                         <input
                           type="text"
@@ -571,14 +573,14 @@ const OrganizationRegister = () => {
                           value={requirement.jobTitle}
                           onChange={(e) => handleInputChange(e, 'hiringRequirements', index)}
                           className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
-                          placeholder="Software Developer, Data Scientist, etc."
+                          placeholder={t('softwareDeveloper')}
                           required
                         />
                       </div>
 
                       <div className="space-y-2">
                         <label className="block text-sm font-semibold text-gray-700">
-                          Number of Positions *
+                          {t('numberOfPositions')} *
                         </label>
                         <input
                           type="number"
@@ -593,7 +595,7 @@ const OrganizationRegister = () => {
 
                       <div className="space-y-2">
                         <label className="block text-sm font-semibold text-gray-700">
-                          Experience Level
+                          {t('experienceLevel')}
                         </label>
                         <select
                           name="experienceLevel"
@@ -601,16 +603,16 @@ const OrganizationRegister = () => {
                           onChange={(e) => handleInputChange(e, 'hiringRequirements', index)}
                           className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
                         >
-                          <option value="Fresher">Fresher</option>
-                          <option value="Junior (1-2 years)">1-3 years</option>
-                          <option value="Mid-level (2-5 years)">3-5 years</option>
-                          <option value="Senior (5+ years)">5+ years</option>
+                          <option value="Fresher">{t('fresher')}</option>
+                          <option value="Junior (1-2 years)">{t('junior')}</option>
+                          <option value="Mid-level (2-5 years)">{t('midLevel')}</option>
+                          <option value="Senior (5+ years)">{t('senior')}</option>
                         </select>
                       </div>
 
                       <div className="space-y-2">
                         <label className="block text-sm font-semibold text-gray-700">
-                          Job Type
+                          {t('jobType')}
                         </label>
                         <select
                           name="jobType"
@@ -618,10 +620,10 @@ const OrganizationRegister = () => {
                           onChange={(e) => handleInputChange(e, 'hiringRequirements', index)}
                           className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
                         >
-                          <option value="Full-time">Full-time</option>
-                          <option value="Part-time">Part-time</option>
-                          <option value="Contract">Contract</option>
-                          <option value="Internship">Internship</option>
+                          <option value="Full-time">{t('fullTime')}</option>
+                          <option value="Part-time">{t('partTime')}</option>
+                          <option value="Contract">{t('contract')}</option>
+                          <option value="Internship">{t('internship')}</option>
                         </select>
                       </div>
                     </div>
@@ -637,7 +639,7 @@ const OrganizationRegister = () => {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    <span>Add Another Position</span>
+                    <span>{t('addAnotherPosition')}</span>
                   </button>
                 </div>
               </div>
@@ -649,16 +651,16 @@ const OrganizationRegister = () => {
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 flex items-center justify-center space-x-2">
                     <span className="text-3xl">🔐</span>
-                    <span>Create Account</span>
+                    <span>{t('createAccount')}</span>
                   </h2>
-                  <p className="text-gray-600 mt-2">Set up your secure login credentials</p>
+                  <p className="text-gray-600 mt-2">{t('setupLoginCredentials')}</p>
                 </div>
 
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-8 rounded-xl border border-purple-100">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Password *
+                        {t('password')} *
                       </label>
                       <input
                         type="password"
@@ -666,16 +668,16 @@ const OrganizationRegister = () => {
                         value={formData.password}
                         onChange={handleInputChange}
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
-                        placeholder="Create a strong password"
+                        placeholder={t('createStrongPassword')}
                         required
                         minLength={6}
                       />
-                      <p className="text-xs text-gray-500">Minimum 6 characters required</p>
+                      <p className="text-xs text-gray-500">{t('minPasswordLength')}</p>
                     </div>
 
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Confirm Password *
+                        {t('confirmPassword')} *
                       </label>
                       <input
                         type="password"
@@ -683,7 +685,7 @@ const OrganizationRegister = () => {
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-800"
-                        placeholder="Confirm your password"
+                        placeholder={t('confirmYourPassword')}
                         required
                         minLength={6}
                       />
@@ -692,25 +694,25 @@ const OrganizationRegister = () => {
 
                   {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
                     <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-red-600 text-sm">Passwords do not match</p>
+                      <p className="text-red-600 text-sm">{t('passwordsDoNotMatch')}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                  <h3 className="font-semibold text-gray-900 mb-3">📋 Registration Summary</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">📋 {t('registrationSummary')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <strong>Organization:</strong> {formData.organizationName || 'Not set'}
+                      <strong>{t('organization')}:</strong> {formData.organizationName || t('notSet')}
                     </div>
                     <div>
-                      <strong>Industry:</strong> {formData.industry || 'Not set'}
+                      <strong>{t('industry')}:</strong> {formData.industry || t('notSet')}
                     </div>
                     <div>
-                      <strong>Location:</strong> {formData.headOfficeLocation.city ? `${formData.headOfficeLocation.city}, ${formData.headOfficeLocation.state}` : 'Not set'}
+                      <strong>{t('location')}:</strong> {formData.headOfficeLocation.city ? `${formData.headOfficeLocation.city}, ${formData.headOfficeLocation.state}` : t('notSet')}
                     </div>
                     <div>
-                      <strong>Contact:</strong> {formData.contactPerson.name || 'Not set'}
+                      <strong>{t('contact')}:</strong> {formData.contactPerson.name || t('notSet')}
                     </div>
                   </div>
                 </div>
@@ -728,7 +730,7 @@ const OrganizationRegister = () => {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
-                  <span>Previous</span>
+                  <span>{t('previous')}</span>
                 </button>
               )}
 
@@ -741,7 +743,7 @@ const OrganizationRegister = () => {
                   disabled={!validateStep()}
                   className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg"
                 >
-                  <span>Continue</span>
+                  <span>{t('continue')}</span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -758,11 +760,11 @@ const OrganizationRegister = () => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      <span>Creating Account...</span>
+                      <span>{t('creatingAccount')}</span>
                     </>
                   ) : (
                     <>
-                      <span>Create Organization Account</span>
+                      <span>{t('createOrganizationAccount')}</span>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
@@ -777,13 +779,13 @@ const OrganizationRegister = () => {
         {/* Login Link */}
         <div className="text-center mt-8">
           <p className="text-gray-600">
-            Already have an organization account?{' '}
+            {t('alreadyHaveAccount')}{' '}
             <button
               type="button"
               onClick={() => window.location.href = '/organization/login'}
               className="font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-200"
             >
-              Sign in here
+              {t('signInHere')}
             </button>
           </p>
         </div>

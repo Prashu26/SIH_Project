@@ -22,6 +22,7 @@ import OrganizationDashboard from './pages/OrganizationDashboard';
 
 // Auth context for managing user state (moved to separate module)
 import AuthContext, { AuthProvider } from './contexts/AuthContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 function RequireAuth({ allowedRoles, children }) {
   const { user } = React.useContext(AuthContext);
@@ -169,33 +170,35 @@ export default function App() {
   }
 
   return (
-    <AuthProvider>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <div className="relative min-h-screen">
-          {/* Full-viewport spline background (interactive when possible) */}
-          <div aria-hidden className="fixed inset-0 -z-10">
-            {SplineComp && !splineFailed ? (
-              <SplineComp
-                scene={SCENE_URL}
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                onError={() => setSplineFailed(true)}
-              />
-            ) : (
-              <iframe
-                title="spline-background"
-                src={SCENE_URL}
-                className="absolute inset-0 w-full h-full pointer-events-none border-0"
-                sandbox="allow-scripts allow-same-origin allow-popups"
-              />
-            )}
-          </div>
+    <LanguageProvider>
+      <AuthProvider>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <div className="relative min-h-screen">
+            {/* Full-viewport spline background (interactive when possible) */}
+            <div aria-hidden className="fixed inset-0 -z-10">
+              {SplineComp && !splineFailed ? (
+                <SplineComp
+                  scene={SCENE_URL}
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                  onError={() => setSplineFailed(true)}
+                />
+              ) : (
+                <iframe
+                  title="spline-background"
+                  src={SCENE_URL}
+                  className="absolute inset-0 w-full h-full pointer-events-none border-0"
+                  sandbox="allow-scripts allow-same-origin allow-popups"
+                />
+              )}
+            </div>
 
-          {/* Your app content goes here */}
-          <div className="relative z-10">
-            <Layout />
+            {/* Your app content goes here */}
+            <div className="relative z-10">
+              <Layout />
+            </div>
           </div>
-        </div>
-      </BrowserRouter>
-    </AuthProvider>
+        </BrowserRouter>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
